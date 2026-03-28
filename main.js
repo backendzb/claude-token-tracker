@@ -351,7 +351,7 @@ ipcMain.handle('switch-context', (_event, { sessionId, cwd }) => {
 
 // ---- 自动更新 ----
 function setupAutoUpdater() {
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('update-available', (info) => {
@@ -359,6 +359,8 @@ function setupAutoUpdater() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('update-status', { status: 'downloading', version: info.version, percent: 0 });
     }
+    // 手动触发下载才能收到 download-progress 事件
+    autoUpdater.downloadUpdate();
   });
 
   autoUpdater.on('download-progress', (progress) => {
