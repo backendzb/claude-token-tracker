@@ -979,10 +979,14 @@ async function doCheckUpdate() {
   const result = await window.api.checkUpdate();
   if (result.error) {
     $('updateStatus').textContent = '检查失败: ' + result.error;
+  } else if (result.hasUpdate) {
+    $('updateStatus').textContent = '发现新版本 v' + result.newVersion + '，正在下载...';
+    $('updateStatus').style.color = 'var(--blue)';
+    return; // 不自动清除，等下载完成
   } else {
-    $('updateStatus').textContent = '当前 v' + result.currentVersion + '，已是最新';
+    $('updateStatus').textContent = 'v' + result.currentVersion + ' 已是最新';
   }
-  setTimeout(() => $('updateStatus').textContent = '', 5000);
+  setTimeout(() => { $('updateStatus').textContent = ''; $('updateStatus').style.color = ''; }, 5000);
 }
 
 // 监听更新状态
