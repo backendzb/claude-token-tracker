@@ -33,7 +33,7 @@
   --tag-fast-bg: #ddf4f0;
   --badge-active-bg: #ddf4ff; --badge-warn-bg: #fff8c5; --badge-danger-bg: #ffebe9;
   --label-query-bg: #ddf4ff; --label-response-bg: #dafbe1;
-  --btn-primary-bg: #2da44e; --btn-primary-hover: #3fb950; --btn-primary-border: #2da44e;
+  --btn-primary-bg: #4a8cca; --btn-primary-hover: #5a9cd8; --btn-primary-border: #4a8cca;
   --btn-export-bg: #598fbf; --btn-export-hover: #6ba3d6; --btn-export-border: #598fbf;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
@@ -190,9 +190,8 @@ tbody tr:last-child td { border-bottom: none; }
 .session-stats { margin-left: auto; display: flex; gap: 16px; font-size: 12px; color: var(--text2); }
 .session-stats span { font-variant-numeric: tabular-nums; }
 .session-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
-.switch-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; white-space: nowrap; opacity: 0; transition: opacity 0.2s; }
-.session-card:hover .switch-btn { opacity: 1; }
-.switch-btn:hover { border-color: var(--blue); color: var(--blue); }
+.switch-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text3); padding: 2px 7px; border-radius: 5px; font-size: 10px; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.switch-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--bg); }
 .session-detail { margin-top: 12px; display: none; }
 .session-card.expanded .session-detail { display: block; }
 .session-chart { height: 120px; background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative; }
