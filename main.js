@@ -8,6 +8,7 @@ const {
   loadAllUsageData, getProjectList,
   loadSessionList, loadSessionDetail, loadBucketData,
   exportToCSV, exportToJSON,
+  loadConversation, getSessionIndex,
 } = require('./data-loader');
 
 let mainWindow;
@@ -311,6 +312,17 @@ ipcMain.handle('save-settings', (_event, settings) => {
   saveSettings(settings);
   registerShortcut();
   return { success: true };
+});
+
+// 对话记录 IPC
+ipcMain.handle('get-session-index', async () => {
+  try { return await getSessionIndex(); }
+  catch (err) { console.error(err); return { error: err.message }; }
+});
+
+ipcMain.handle('load-conversation', async (_event, sessionId) => {
+  try { return await loadConversation(sessionId); }
+  catch (err) { console.error(err); return { error: err.message }; }
 });
 
 // 主题同步 — 更新标题栏颜色

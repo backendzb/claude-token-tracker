@@ -524,8 +524,97 @@ function exportToJSON(records) {
   return JSON.stringify(records, null, 2);
 }
 
+/**
+ * 加载完整对话记录（按会话文件）
+ */
+async function loadConversation(sessionId) {
+  const claudePaths = getClaudePaths();
+  const allFiles = await globJsonlFiles(claudePaths);
+  const sessionFile = allFiles.find(f => path.basename(f, '.jsonl') === sessionId);
+  if (!sessionFile) return { messages: [], project: 'unknown' };
+
+  const project = extractProjectFromPath(sessionFile);
+  const messages = [];
+
+  await processJsonlFile(sessionFile, (obj) => {
+    if (obj.type === 'user') {
+      if (typeof obj.message?.content === 'string') {
+        messages.push({
+          role: 'user', timestamp: obj.timestamp, uuid: obj.uuid,
+          content: obj.message.content,
+        });
+      }
+      // 跳过 tool_result 类型的 user 消息（中间态）
+    } else if (obj.type === 'assistant' && obj.message) {
+      const parts = [];
+      const tools = [];
+      let hasThinking = false;
+      if (Array.isArray(obj.message.content)) {
+        for (const block of obj.message.content) {
+          if (block.type === 'text' && block.text) parts.push(block.text);
+          else if (block.type === 'thinking') hasThinking = true;
+          else if (block.type === 'tool_use') tools.push(block.name);
+        }
+      }
+      const content = parts.join('\n');
+      // 只保留有实际内容或工具调用的消息
+      if (content || tools.length > 0) {
+        messages.push({
+          role: 'assistant', timestamp: obj.timestamp, uuid: obj.uuid,
+          content, tools, hasThinking,
+          model: obj.message.model || '',
+        });
+      }
+    }
+  });
+
+  return { messages, project };
+}
+
+/**
+ * 获取所有会话列表（含首条消息预览）
+ */
+async function getSessionIndex() {
+  const claudePaths = getClaudePaths();
+  const allFiles = await globJsonlFiles(claudePaths);
+  const sessions = [];
+
+  for (const file of allFiles) {
+    const sessionId = path.basename(file, '.jsonl');
+    // 跳过子代理文件
+    if (file.includes('subagents')) continue;
+    const project = extractProjectFromPath(file);
+    let firstUserMsg = '';
+    let firstTimestamp = '';
+    let lastTimestamp = '';
+    let msgCount = 0;
+
+    await processJsonlFile(file, (obj) => {
+      if (obj.type === 'user' && typeof obj.message?.content === 'string') {
+        msgCount++;
+        if (!firstUserMsg) {
+          firstUserMsg = obj.message.content.slice(0, 120).replace(/\n/g, ' ');
+          firstTimestamp = obj.timestamp;
+        }
+        lastTimestamp = obj.timestamp;
+      } else if (obj.type === 'assistant' && obj.message?.content) {
+        msgCount++;
+        lastTimestamp = obj.timestamp;
+      }
+    });
+
+    if (msgCount > 0) {
+      sessions.push({ sessionId, project, firstUserMsg, firstTimestamp, lastTimestamp, msgCount });
+    }
+  }
+
+  sessions.sort((a, b) => b.lastTimestamp > a.lastTimestamp ? 1 : b.lastTimestamp < a.lastTimestamp ? -1 : 0);
+  return sessions;
+}
+
 module.exports = {
   loadAllUsageData, getProjectList, calculateCost, getPricing,
   loadSessionList, loadSessionDetail, loadBucketData,
+  loadConversation, getSessionIndex,
   exportToCSV, exportToJSON,
 };

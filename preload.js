@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('api', {
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   onDataChanged: (callback) => ipcRenderer.on('data-changed', callback),
   switchContext: (sessionId, cwd) => ipcRenderer.invoke('switch-context', { sessionId, cwd }),
+  getSessionIndex: () => ipcRenderer.invoke('get-session-index'),
+  loadConversation: (sessionId) => ipcRenderer.invoke('load-conversation', sessionId),
   updateTheme: (theme) => ipcRenderer.invoke('update-theme', theme),
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   getVersion: () => ipcRenderer.invoke('get-version'),

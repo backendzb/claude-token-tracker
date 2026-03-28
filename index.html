@@ -33,8 +33,8 @@
   --tag-fast-bg: #ddf4f0;
   --badge-active-bg: #ddf4ff; --badge-warn-bg: #fff8c5; --badge-danger-bg: #ffebe9;
   --label-query-bg: #ddf4ff; --label-response-bg: #dafbe1;
-  --btn-primary-bg: #1a7f37; --btn-primary-hover: #2da44e; --btn-primary-border: #2da44e;
-  --btn-export-bg: #0969da; --btn-export-hover: #218bff; --btn-export-border: #218bff;
+  --btn-primary-bg: #2da44e; --btn-primary-hover: #3fb950; --btn-primary-border: #2da44e;
+  --btn-export-bg: #598fbf; --btn-export-hover: #6ba3d6; --btn-export-border: #598fbf;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
@@ -190,8 +190,9 @@ tbody tr:last-child td { border-bottom: none; }
 .session-stats { margin-left: auto; display: flex; gap: 16px; font-size: 12px; color: var(--text2); }
 .session-stats span { font-variant-numeric: tabular-nums; }
 .session-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
-.switch-btn { background: var(--btn-export-bg); border-color: var(--btn-export-border); color: #fff; padding: 3px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
-.switch-btn:hover { background: var(--btn-export-hover); opacity: 0.9; }
+.switch-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 3px 8px; border-radius: 6px; font-size: 10px; cursor: pointer; white-space: nowrap; opacity: 0; transition: opacity 0.2s; }
+.session-card:hover .switch-btn { opacity: 1; }
+.switch-btn:hover { border-color: var(--blue); color: var(--blue); }
 .session-detail { margin-top: 12px; display: none; }
 .session-card.expanded .session-detail { display: block; }
 .session-chart { height: 120px; background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative; }
@@ -229,6 +230,33 @@ tbody tr:last-child td { border-bottom: none; }
 .compare-diff { font-size: 10px; margin-left: 6px; }
 .diff-up { color: var(--red); } .diff-down { color: var(--green); } .diff-same { color: var(--text3); }
 
+/* 对话记录 */
+.chat-layout { display: flex; height: calc(100vh - 90px); }
+.chat-sidebar { width: 300px; border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+.chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px 24px; }
+.chat-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text3); font-size: 13px; }
+.chat-search { padding: 8px; border-bottom: 1px solid var(--border); }
+.chat-search input { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 6px; font-size: 12px; outline: none; }
+.chat-search input:focus { border-color: var(--blue); }
+.chat-item { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+.chat-item:hover { background: var(--bg3); }
+.chat-item.active { background: var(--bg3); border-left: 2px solid var(--blue); }
+.chat-item-title { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 3px; }
+.chat-item-meta { font-size: 10px; color: var(--text3); display: flex; gap: 8px; }
+.chat-header { padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+
+.msg { margin-bottom: 12px; max-width: 85%; }
+.msg-user { margin-left: auto; }
+.msg-assistant { margin-right: auto; }
+.msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.msg-user .msg-bubble { background: #1f6feb; color: #fff; border-bottom-right-radius: 4px; }
+.msg-assistant .msg-bubble { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+.msg-meta { font-size: 9px; color: var(--text3); margin-top: 3px; padding: 0 4px; }
+.msg-user .msg-meta { text-align: right; }
+.msg-tools { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.msg-tool-tag { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--bg3); color: var(--cyan); border: 1px solid var(--border); }
+
 /* 设置面板 */
 .settings-section { padding: 16px 24px; max-width: 600px; }
 .setting-group { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
@@ -254,6 +282,7 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="tab" data-tab="compare">对比</div>
   <div class="tab" data-tab="ranking">排行</div>
   <div class="tab" data-tab="sessions">会话</div>
+  <div class="tab" data-tab="chat">对话</div>
   <div class="tab" data-tab="settings">设置</div>
   <div class="spacer"></div>
   <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" title="切换主题"></button>
@@ -363,6 +392,20 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="rank-section" id="rankArea"></div>
 </div>
 
+<!-- ===== 对话页 ===== -->
+<div class="page" id="page-chat">
+  <div class="chat-layout">
+    <div class="chat-sidebar">
+      <div class="chat-search"><input type="text" id="chatSearch" placeholder="搜索对话..." oninput="filterChatList()"></div>
+      <div id="chatList"></div>
+    </div>
+    <div class="chat-main">
+      <div class="chat-header" id="chatHeader">选择一个对话查看</div>
+      <div class="chat-messages" id="chatMessages"><div class="chat-empty">从左侧选择一个对话</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 设置页 ===== -->
 <div class="page" id="page-settings">
   <div class="settings-section">
@@ -383,13 +426,13 @@ tbody tr:last-child td { border-bottom: none; }
     <span class="status" id="settingsStatus" style="margin-left:12px"></span>
     <div class="setting-group" style="margin-top:16px">
       <h4>关于</h4>
-      <div class="setting-row"><label>当前版本:</label><span id="appVersion" style="font-size:12px;color:var(--text)">-</span></div>
+      <div class="setting-row"><label>当前版本:</label><span id="appVersion" style="font-size:13px;font-weight:600;color:var(--text)">-</span></div>
       <div class="setting-row">
-        <label>自动更新:</label>
-        <button class="export-btn" onclick="doCheckUpdate()">检查更新</button>
+        <label>检查更新:</label>
+        <button style="font-size:11px;padding:4px 12px" onclick="doCheckUpdate()">检查</button>
         <span class="status" id="updateStatus" style="margin-left:8px"></span>
       </div>
-      <div class="setting-hint">应用启动时自动检查，每小时检查一次</div>
+      <div class="setting-hint">启动时自动检查，每小时检查一次</div>
     </div>
   </div>
 </div>
@@ -497,6 +540,7 @@ document.querySelectorAll('.tab').forEach(t => {
     if (t.dataset.tab === 'sessions') refreshSessions();
     if (t.dataset.tab === 'compare') refreshCompare();
     if (t.dataset.tab === 'ranking') refreshRanking();
+    if (t.dataset.tab === 'chat') loadChatIndex();
     if (t.dataset.tab === 'settings') loadAppSettings();
   });
 });
@@ -962,6 +1006,67 @@ async function saveAppSettings() {
   const result = await window.api.saveSettings(settings);
   $('settingsStatus').textContent = result.success ? '已保存' : '保存失败';
   setTimeout(() => $('settingsStatus').textContent = '', 2000);
+}
+
+// ---- 对话记录 ----
+let _chatSessions = [];
+
+async function loadChatIndex() {
+  $('chatList').innerHTML = '<div style="padding:12px;color:var(--text3);font-size:11px">加载中...</div>';
+  const result = await window.api.getSessionIndex();
+  if (result?.error) { $('chatList').innerHTML = '<div style="padding:12px;color:var(--red)">加载失败</div>'; return; }
+  _chatSessions = result;
+  renderChatList(_chatSessions);
+}
+
+function renderChatList(sessions) {
+  if (!sessions.length) { $('chatList').innerHTML = '<div style="padding:12px;color:var(--text3)">暂无对话</div>'; return; }
+  $('chatList').innerHTML = sessions.map(s => {
+    const time = s.lastTimestamp ? new Date(s.lastTimestamp).toLocaleString('zh-CN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    return `<div class="chat-item" data-sid="${escapeHtml(s.sessionId)}" onclick="openConversation('${s.sessionId}',this)">
+      <div class="chat-item-title">${escapeHtml(s.firstUserMsg || s.sessionId.slice(0, 8))}</div>
+      <div class="chat-item-meta"><span>${escapeHtml(s.project)}</span><span>${time}</span><span>${s.msgCount} 条</span></div>
+    </div>`;
+  }).join('');
+}
+
+function filterChatList() {
+  const q = $('chatSearch').value.toLowerCase();
+  if (!q) { renderChatList(_chatSessions); return; }
+  renderChatList(_chatSessions.filter(s =>
+    (s.firstUserMsg || '').toLowerCase().includes(q) || s.project.toLowerCase().includes(q) || s.sessionId.includes(q)
+  ));
+}
+
+async function openConversation(sessionId, el) {
+  document.querySelectorAll('.chat-item.active').forEach(e => e.classList.remove('active'));
+  if (el) el.classList.add('active');
+  $('chatMessages').innerHTML = '<div class="chat-empty">加载中...</div>';
+
+  const result = await window.api.loadConversation(sessionId);
+  if (result?.error) { $('chatMessages').innerHTML = `<div class="chat-empty">加载失败: ${result.error}</div>`; return; }
+
+  $('chatHeader').textContent = `${result.project} — ${sessionId.slice(0, 8)}... (${result.messages.length} 条消息)`;
+
+  if (!result.messages.length) { $('chatMessages').innerHTML = '<div class="chat-empty">此会话无消息记录</div>'; return; }
+
+  const html = result.messages.map(m => {
+    const time = new Date(m.timestamp).toLocaleString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    if (m.role === 'user') {
+      return `<div class="msg msg-user"><div class="msg-bubble">${escapeHtml(m.content)}</div><div class="msg-meta">${time}</div></div>`;
+    } else {
+      const toolTags = (m.tools || []).map(t => `<span class="msg-tool-tag">${escapeHtml(t)}</span>`).join('');
+      const model = m.model ? `<span>${m.model.replace('claude-','')}</span>` : '';
+      return `<div class="msg msg-assistant">
+        <div class="msg-bubble">${escapeHtml(m.content || '(工具调用)')}</div>
+        ${toolTags ? `<div class="msg-tools">${toolTags}</div>` : ''}
+        <div class="msg-meta">${model} ${time}</div>
+      </div>`;
+    }
+  }).join('');
+
+  $('chatMessages').innerHTML = html;
+  $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
 }
 
 // ---- 切换上下文 ----
