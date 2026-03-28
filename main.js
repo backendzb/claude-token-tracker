@@ -349,23 +349,16 @@ ipcMain.handle('switch-context', (_event, { sessionId, cwd }) => {
   }
 });
 
-// ---- 自动更新 ----
+// ---- 自动更新（仅检测，跳转 GitHub 下载） ----
+const RELEASE_URL = 'https://github.com/backendzb/claude-token-tracker/releases';
+
 function setupAutoUpdater() {
   autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('update-available', (info) => {
-    showNotification('发现新版本', `v${info.version} 可用，正在后台下载...`);
+    showNotification('发现新版本', `v${info.version} 可用，点击前往下载`);
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'downloading', version: info.version, percent: 0 });
-    }
-    // 手动触发下载才能收到 download-progress 事件
-    autoUpdater.downloadUpdate();
-  });
-
-  autoUpdater.on('download-progress', (progress) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'downloading', percent: Math.round(progress.percent) });
+      mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
     }
   });
 
@@ -375,42 +368,23 @@ function setupAutoUpdater() {
     }
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'ready', version: info.version });
-    }
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: '更新就绪',
-      message: `v${info.version} 已下载完成，是否立即安装并重启？`,
-      buttons: ['立即安装', '稍后'],
-      defaultId: 0,
-    }).then(({ response }) => {
-      if (response === 0) {
-        isQuitting = true;
-        autoUpdater.quitAndInstall();
-      }
-    });
-  });
-
   autoUpdater.on('error', (err) => {
     console.error('[updater] Error:', err.message);
   });
 
-  // 启动后延迟检查更新，之后每小时检查一次
-  setTimeout(() => autoUpdater.checkForUpdatesAndNotify(), 10000);
-  setInterval(() => autoUpdater.checkForUpdatesAndNotify(), 3600000);
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10000);
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 3600000);
 }
 
 // 手动检查更新 IPC
 ipcMain.handle('check-update', async () => {
   try {
-    const result = await autoUpdater.checkForUpdatesAndNotify();
+    const result = await autoUpdater.checkForUpdates();
     const currentVersion = app.getVersion();
     if (result && result.updateInfo) {
       const newVersion = result.updateInfo.version;
       if (newVersion !== currentVersion) {
-        return { hasUpdate: true, currentVersion, newVersion };
+        return { hasUpdate: true, currentVersion, newVersion, url: RELEASE_URL + '/tag/v' + newVersion };
       }
     }
     return { hasUpdate: false, currentVersion };
@@ -420,6 +394,11 @@ ipcMain.handle('check-update', async () => {
 });
 
 ipcMain.handle('get-version', () => app.getVersion());
+
+ipcMain.handle('open-url', (_event, url) => {
+  const { shell } = require('electron');
+  shell.openExternal(url);
+});
 
 // ---- App Lifecycle ----
 

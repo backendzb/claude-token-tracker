@@ -1678,12 +1678,8 @@
           <button style="font-size:11px;padding:4px 12px" onclick="doCheckUpdate()">检查</button>
           <span class="status" id="updateStatus" style="margin-left:8px"></span>
         </div>
-        <div id="updateProgressWrap" style="display:none;margin-top:6px">
-          <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
-            <div id="updateProgressBar"
-              style="height:100%;background:var(--blue);border-radius:3px;transition:width 0.3s;width:0%"></div>
-          </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px" id="updateProgressText"></div>
+        <div id="updateActionWrap" style="display:none;margin-top:6px">
+          <button class="export-btn" id="updateDownloadBtn" style="font-size:12px;padding:5px 16px">前往下载</button>
         </div>
         <div class="setting-hint">启动时自动检查，每小时检查一次</div>
       </div>
@@ -2229,15 +2225,21 @@
       }
     }
 
+    let _updateUrl = '';
+
     async function doCheckUpdate() {
       $('updateStatus').textContent = '检查中...';
+      $('updateActionWrap').style.display = 'none';
       const result = await window.api.checkUpdate();
       if (result.error) {
         $('updateStatus').textContent = '检查失败: ' + result.error;
       } else if (result.hasUpdate) {
-        $('updateStatus').textContent = '发现新版本 v' + result.newVersion + '，正在下载...';
+        _updateUrl = result.url;
+        $('updateStatus').textContent = '发现新版本 v' + result.newVersion;
         $('updateStatus').style.color = 'var(--blue)';
-        return; // 不自动清除，等下载完成
+        $('updateActionWrap').style.display = 'block';
+        $('updateDownloadBtn').onclick = () => window.api.openUrl(_updateUrl);
+        return;
       } else {
         $('updateStatus').textContent = 'v' + result.currentVersion + ' 已是最新';
       }
@@ -2248,28 +2250,17 @@
     if (window.api.onUpdateStatus) {
       window.api.onUpdateStatus((data) => {
         const el = $('updateStatus');
-        const wrap = $('updateProgressWrap');
-        const bar = $('updateProgressBar');
-        const ptxt = $('updateProgressText');
         if (!el) return;
-
-        if (data.status === 'downloading') {
+        if (data.status === 'available') {
+          _updateUrl = 'https://github.com/backendzb/claude-token-tracker/releases/tag/v' + data.version;
+          el.textContent = '发现新版本 v' + data.version;
           el.style.color = 'var(--blue)';
-          if (data.version) el.textContent = 'v' + data.version + ' 下载中...';
-          if (wrap && data.percent != null) {
-            wrap.style.display = 'block';
-            bar.style.width = data.percent + '%';
-            ptxt.textContent = data.percent + '%';
-            el.textContent = (data.version ? 'v' + data.version + ' ' : '') + '下载中 ' + data.percent + '%';
-          }
-        } else if (data.status === 'ready') {
-          el.textContent = 'v' + data.version + ' 下载完成，可安装';
-          el.style.color = 'var(--green)';
-          if (wrap) { bar.style.width = '100%'; bar.style.background = 'var(--green)'; ptxt.textContent = '下载完成'; }
+          $('updateActionWrap').style.display = 'block';
+          $('updateDownloadBtn').onclick = () => window.api.openUrl(_updateUrl);
         } else if (data.status === 'latest') {
           el.textContent = '已是最新';
           el.style.color = '';
-          if (wrap) wrap.style.display = 'none';
+          $('updateActionWrap').style.display = 'none';
         }
       });
     }

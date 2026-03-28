@@ -18,5 +18,6 @@ contextBridge.exposeInMainWorld('api', {
   updateTheme: (theme) => ipcRenderer.invoke('update-theme', theme),
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   getVersion: () => ipcRenderer.invoke('get-version'),
+  openUrl: (url) => ipcRenderer.invoke('open-url', url),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_e, data) => callback(data)),
 });
