@@ -994,8 +994,17 @@ if (window.api.onUpdateStatus) {
   window.api.onUpdateStatus((data) => {
     const el = $('updateStatus');
     if (!el) return;
-    if (data.status === 'downloading') el.textContent = 'v' + data.version + ' 下载中...';
-    else if (data.status === 'ready') el.textContent = 'v' + data.version + ' 已就绪';
+    if (data.status === 'downloading') {
+      const pct = data.percent != null ? ` ${data.percent}%` : '';
+      el.textContent = (data.version ? 'v' + data.version + ' ' : '') + '下载中' + pct;
+      el.style.color = 'var(--blue)';
+    } else if (data.status === 'ready') {
+      el.textContent = 'v' + data.version + ' 下载完成，可安装';
+      el.style.color = 'var(--green)';
+    } else if (data.status === 'latest') {
+      el.textContent = '已是最新';
+      el.style.color = '';
+    }
   });
 }
 

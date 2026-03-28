@@ -357,7 +357,19 @@ function setupAutoUpdater() {
   autoUpdater.on('update-available', (info) => {
     showNotification('发现新版本', `v${info.version} 可用，正在后台下载...`);
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'downloading', version: info.version });
+      mainWindow.webContents.send('update-status', { status: 'downloading', version: info.version, percent: 0 });
+    }
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-status', { status: 'downloading', percent: Math.round(progress.percent) });
+    }
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-status', { status: 'latest' });
     }
   });
 
