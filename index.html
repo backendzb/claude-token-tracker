@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Token Tracker</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root, [data-theme="dark"] {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #1c2128; --border: #21262d;
+  --text: #e6edf3; --text2: #8b949e; --text3: #484f58;
+  --blue: #58a6ff; --green: #3fb950; --yellow: #d29922;
+  --red: #f85149; --purple: #a371f7; --pink: #f778ba; --cyan: #39d2c0;
+  --orange: #f0883e;
+  --tag-opus-bg: #3b1d60; --tag-opus-fg: #d2a8ff;
+  --tag-sonnet-bg: #1a3a1a; --tag-sonnet-fg: #7ee787;
+  --tag-haiku-bg: #3d2b00; --tag-haiku-fg: #e3b341;
+  --tag-fast-bg: #1a3a3a;
+  --badge-active-bg: #0d419d; --badge-warn-bg: #4b2900; --badge-danger-bg: #5c0a0a;
+  --label-query-bg: #0d419d33; --label-response-bg: #23863633;
+  --btn-primary-bg: #238636; --btn-primary-hover: #2ea043; --btn-primary-border: #2ea043;
+  --btn-export-bg: #1f6feb; --btn-export-hover: #388bfd; --btn-export-border: #388bfd;
+}
+[data-theme="light"] {
+  --bg: #ffffff; --bg2: #f6f8fa; --bg3: #eaeef2; --border: #d0d7de;
+  --text: #1f2328; --text2: #656d76; --text3: #8b949e;
+  --blue: #0969da; --green: #1a7f37; --yellow: #9a6700;
+  --red: #cf222e; --purple: #8250df; --pink: #bf3989; --cyan: #1b7c83;
+  --orange: #bc4c00;
+  --tag-opus-bg: #eddeff; --tag-opus-fg: #6639a6;
+  --tag-sonnet-bg: #dafbe1; --tag-sonnet-fg: #1a7f37;
+  --tag-haiku-bg: #fff8c5; --tag-haiku-fg: #7d5600;
+  --tag-fast-bg: #ddf4f0;
+  --badge-active-bg: #ddf4ff; --badge-warn-bg: #fff8c5; --badge-danger-bg: #ffebe9;
+  --label-query-bg: #ddf4ff; --label-response-bg: #dafbe1;
+  --btn-primary-bg: #1a7f37; --btn-primary-hover: #2da44e; --btn-primary-border: #2da44e;
+  --btn-export-bg: #0969da; --btn-export-hover: #218bff; --btn-export-border: #218bff;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* Tab 导航 */
+.tabs {
+  display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px;
+  -webkit-app-region: no-drag;
+}
+.tab {
+  padding: 10px 20px; font-size: 13px; color: var(--text2); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* 控制栏 */
+.controls {
+  display: flex; gap: 12px; align-items: center; padding: 12px 24px;
+  background: var(--bg2); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.control-group { display: flex; align-items: center; gap: 6px; }
+.control-group label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+select, button {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; outline: none;
+}
+select:hover, button:hover { border-color: var(--text3); }
+button.primary { background: var(--btn-primary-bg); border-color: var(--btn-primary-border); }
+button.primary:hover { background: var(--btn-primary-hover); }
+button.export-btn { background: var(--btn-export-bg); border-color: var(--btn-export-border); }
+button.export-btn:hover { background: var(--btn-export-hover); }
+.spacer { flex: 1; }
+.status { font-size: 11px; color: var(--text3); }
+
+/* 页面容器 */
+.page { display: none; }
+.page.active { display: block; }
+
+/* 统计卡片 */
+.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 16px 24px 8px; }
+.stat {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px; position: relative; overflow: hidden;
+}
+.stat::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.stat.s1::after { background: var(--blue); } .stat.s2::after { background: var(--green); }
+.stat.s3::after { background: var(--yellow); } .stat.s4::after { background: var(--pink); }
+.stat.s5::after { background: var(--purple); } .stat.s6::after { background: var(--red); }
+.stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-val { font-size: 22px; font-weight: 700; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.stat.s1 .stat-val { color: var(--blue); } .stat.s2 .stat-val { color: var(--green); }
+.stat.s3 .stat-val { color: var(--yellow); } .stat.s4 .stat-val { color: var(--pink); }
+.stat.s5 .stat-val { color: var(--purple); } .stat.s6 .stat-val { color: var(--red); }
+.stat-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* 5h 窗口 */
+.bucket-section { padding: 8px 24px; }
+.bucket-cards { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+.bucket-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 18px; min-width: 220px; flex-shrink: 0;
+}
+.bucket-card.active { border-color: var(--blue); box-shadow: 0 0 12px rgba(88,166,255,0.15); }
+.bucket-card.warning { border-color: var(--yellow); box-shadow: 0 0 12px rgba(210,153,34,0.2); }
+.bucket-card.danger { border-color: var(--red); box-shadow: 0 0 12px rgba(248,81,73,0.2); }
+.bucket-title { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.bucket-title .badge { font-size: 9px; padding: 1px 6px; border-radius: 8px; }
+.badge-active { background: var(--badge-active-bg); color: var(--blue); }
+.badge-warn { background: var(--badge-warn-bg); color: var(--yellow); }
+.badge-danger { background: var(--badge-danger-bg); color: var(--red); }
+.bucket-cost { font-size: 20px; font-weight: 700; color: var(--text); }
+.bucket-meta { font-size: 11px; color: var(--text3); margin-top: 4px; line-height: 1.6; }
+.bucket-bar { height: 4px; background: var(--bg3); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.bucket-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+/* 图表区域 */
+.charts { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; padding: 8px 24px; }
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; min-height: 180px; }
+.card-title { font-size: 13px; color: var(--text2); margin-bottom: 10px; font-weight: 600; }
+.bar-chart { display: flex; align-items: flex-end; gap: 2px; height: 140px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; height: 100%; justify-content: flex-end; }
+.bar-stack { width: 80%; display: flex; flex-direction: column-reverse; border-radius: 2px 2px 0 0; overflow: hidden; cursor: pointer; position: relative; }
+.bar-seg { min-height: 0; transition: height 0.3s; }
+.bar-lbl { font-size: 8px; color: var(--text3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+.bar-stack:hover { opacity: 0.85; }
+.bar-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 11px; white-space: pre-line; z-index: 100; pointer-events: none; line-height: 1.5; }
+.bar-stack:hover .bar-tip { display: block; }
+.donut-wrap { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.legend { display: flex; flex-direction: column; gap: 5px; }
+.legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-val { color: var(--text2); margin-left: auto; font-variant-numeric: tabular-nums; padding-left: 10px; }
+
+/* 表格 */
+.table-section { padding: 8px 24px 20px; }
+.table-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.table-header h3 { font-size: 14px; }
+.table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.scroll-wrap { max-height: 480px; overflow-y: auto; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-top: 1px solid var(--border); }
+.pagination button { min-width: 32px; padding: 4px 10px; }
+.pagination button:disabled { opacity: 0.3; cursor: default; }
+.pagination .page-info { font-size: 11px; color: var(--text2); min-width: 80px; text-align: center; }
+.scroll-wrap::-webkit-scrollbar { width: 6px; }
+.scroll-wrap::-webkit-scrollbar-track { background: transparent; }
+.scroll-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { background: var(--bg3); padding: 7px 10px; text-align: left; font-weight: 600; color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2; }
+thead th.r { text-align: right; }
+tbody td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: var(--bg3); }
+tbody tr:last-child td { border-bottom: none; }
+.tag { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+.tag-opus { background: var(--tag-opus-bg); color: var(--tag-opus-fg); }
+.tag-sonnet { background: var(--tag-sonnet-bg); color: var(--tag-sonnet-fg); }
+.tag-haiku { background: var(--tag-haiku-bg); color: var(--tag-haiku-fg); }
+.tag-fast { background: var(--tag-fast-bg); color: var(--cyan); font-size: 9px; margin-left: 3px; }
+.cost-lo { color: var(--green); } .cost-md { color: var(--yellow); } .cost-hi { color: var(--red); }
+.preview-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text3); cursor: pointer; }
+.preview-cell:hover { color: var(--blue); }
+.project-cell { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text2); font-size: 11px; }
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text3); }
+.empty-state .icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+/* 展开内容行 */
+.content-row td { padding: 0 !important; border-bottom: 1px solid var(--border); }
+.content-wrap { margin: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+.content-block {
+  max-height: 300px; overflow-y: auto; padding: 12px 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  white-space: pre-wrap; word-break: break-word;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px; line-height: 1.6; color: var(--text2); tab-size: 2;
+}
+.content-block::-webkit-scrollbar { width: 5px; }
+.content-block::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.content-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+.label-query { color: var(--blue); background: var(--label-query-bg); }
+.label-response { color: var(--green); background: var(--label-response-bg); }
+
+/* 会话页 */
+.session-list { padding: 16px 24px; display: flex; flex-direction: column; gap: 8px; }
+.session-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 18px; cursor: pointer; transition: border-color 0.2s;
+}
+.session-card:hover { border-color: var(--text3); }
+.session-card.expanded { border-color: var(--blue); }
+.session-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.session-id { font-size: 12px; color: var(--blue); font-family: monospace; }
+.session-project { font-size: 11px; color: var(--text2); background: var(--bg3); padding: 1px 8px; border-radius: 8px; }
+.session-stats { margin-left: auto; display: flex; gap: 16px; font-size: 12px; color: var(--text2); }
+.session-stats span { font-variant-numeric: tabular-nums; }
+.session-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.switch-btn { background: var(--btn-export-bg); border-color: var(--btn-export-border); color: #fff; padding: 3px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+.switch-btn:hover { background: var(--btn-export-hover); opacity: 0.9; }
+.session-detail { margin-top: 12px; display: none; }
+.session-card.expanded .session-detail { display: block; }
+.session-chart { height: 120px; background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; position: relative; }
+.session-chart svg { width: 100%; height: 100%; }
+
+/* 主题切换按钮 */
+.theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+  width: 32px; height: 32px; border-radius: 50%; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.2s; padding: 0; line-height: 1;
+}
+.theme-btn:hover { border-color: var(--text3); }
+
+/* 项目排行 */
+.rank-section { padding: 12px 24px; }
+.rank-list { display: flex; flex-direction: column; gap: 6px; }
+.rank-item { display: flex; align-items: center; gap: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+.rank-num { font-size: 16px; font-weight: 700; color: var(--text3); min-width: 24px; text-align: center; }
+.rank-num.top1 { color: var(--yellow); } .rank-num.top2 { color: var(--text2); } .rank-num.top3 { color: var(--orange); }
+.rank-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-bar-wrap { flex: 2; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.rank-bar { height: 100%; border-radius: 4px; background: var(--blue); transition: width 0.3s; }
+.rank-cost { font-size: 13px; font-weight: 600; min-width: 80px; text-align: right; font-variant-numeric: tabular-nums; }
+.rank-meta { font-size: 10px; color: var(--text3); min-width: 80px; text-align: right; }
+
+/* 对比视图 */
+.compare-section { padding: 12px 24px; }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.compare-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.compare-title { font-size: 12px; color: var(--text2); margin-bottom: 10px; font-weight: 600; }
+.compare-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+.compare-row .lbl { color: var(--text2); }
+.compare-row .val { font-weight: 600; font-variant-numeric: tabular-nums; }
+.compare-diff { font-size: 10px; margin-left: 6px; }
+.diff-up { color: var(--red); } .diff-down { color: var(--green); } .diff-same { color: var(--text3); }
+
+/* 设置面板 */
+.settings-section { padding: 16px 24px; max-width: 600px; }
+.setting-group { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+.setting-group h4 { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+.setting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.setting-row label { font-size: 12px; color: var(--text2); min-width: 120px; }
+.setting-row input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 6px; font-size: 12px; width: 160px; outline: none; }
+.setting-row input:focus { border-color: var(--blue); }
+.setting-hint { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+@media (max-width: 1000px) {
+  .stats { grid-template-columns: repeat(3, 1fr); }
+  .charts { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div style="-webkit-app-region:drag;height:36px;background:var(--bg2);display:flex;align-items:center;padding-left:14px;border-bottom:1px solid var(--border)">
+  <span style="font-size:12px;color:var(--text2);pointer-events:none">Claude Code Token Tracker</span>
+</div>
+<div class="tabs">
+  <div class="tab active" data-tab="overview">概览</div>
+  <div class="tab" data-tab="compare">对比</div>
+  <div class="tab" data-tab="ranking">排行</div>
+  <div class="tab" data-tab="sessions">会话</div>
+  <div class="tab" data-tab="settings">设置</div>
+  <div class="spacer"></div>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" title="切换主题"></button>
+</div>
+
+<!-- ===== 概览页 ===== -->
+<div class="page active" id="page-overview">
+  <div class="controls">
+    <div class="control-group">
+      <label>时间:</label>
+      <select id="timeRange">
+        <option value="today">今天</option>
+        <option value="3d">最近 3 天</option>
+        <option value="7d" selected>最近 7 天</option>
+        <option value="30d">最近 30 天</option>
+        <option value="all">全部</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>项目:</label>
+      <select id="projectFilter"><option value="">全部项目</option></select>
+    </div>
+    <div class="control-group">
+      <label>模型:</label>
+      <select id="modelFilter">
+        <option value="">全部模型</option>
+        <option value="opus">Opus</option>
+        <option value="sonnet">Sonnet</option>
+        <option value="haiku">Haiku</option>
+      </select>
+    </div>
+    <button class="primary" id="refreshBtn" onclick="refresh()">刷新</button>
+    <button class="export-btn" onclick="doExport('csv')">导出 CSV</button>
+    <button class="export-btn" onclick="doExport('json')">导出 JSON</button>
+    <div class="spacer"></div>
+    <span class="status" id="statusText"></span>
+  </div>
+
+  <div class="stats" id="statsArea"></div>
+  <div class="bucket-section">
+    <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">5 小时窗口</div>
+    <div class="bucket-cards" id="bucketArea"></div>
+  </div>
+  <div class="charts" id="chartsArea"></div>
+  <div class="table-section">
+    <div class="table-header">
+      <h3>请求明细</h3>
+      <span class="status" id="countText"></span>
+    </div>
+    <div class="table-wrap"><div class="scroll-wrap" id="tableArea"></div></div>
+  </div>
+</div>
+
+<!-- ===== 会话页 ===== -->
+<div class="page" id="page-sessions">
+  <div class="controls">
+    <div class="control-group">
+      <label>时间:</label>
+      <select id="sessionTimeRange">
+        <option value="today">今天</option>
+        <option value="3d">最近 3 天</option>
+        <option value="7d" selected>最近 7 天</option>
+        <option value="30d">最近 30 天</option>
+        <option value="all">全部</option>
+      </select>
+    </div>
+    <button class="primary" onclick="refreshSessions()">刷新</button>
+    <div class="spacer"></div>
+    <span class="status" id="sessionStatus"></span>
+  </div>
+  <div id="sessionList" class="session-list"></div>
+</div>
+
+<!-- ===== 对比页 ===== -->
+<div class="page" id="page-compare">
+  <div class="controls">
+    <div class="control-group">
+      <label>对比:</label>
+      <select id="compareMode">
+        <option value="day">今天 vs 昨天</option>
+        <option value="week" selected>本周 vs 上周</option>
+        <option value="month">本月 vs 上月</option>
+      </select>
+    </div>
+    <button class="primary" onclick="refreshCompare()">刷新</button>
+    <div class="spacer"></div>
+    <span class="status" id="compareStatus"></span>
+  </div>
+  <div class="compare-section" id="compareArea"></div>
+</div>
+
+<!-- ===== 排行页 ===== -->
+<div class="page" id="page-ranking">
+  <div class="controls">
+    <div class="control-group">
+      <label>时间:</label>
+      <select id="rankTimeRange">
+        <option value="7d" selected>最近 7 天</option>
+        <option value="30d">最近 30 天</option>
+        <option value="all">全部</option>
+      </select>
+    </div>
+    <button class="primary" onclick="refreshRanking()">刷新</button>
+    <div class="spacer"></div>
+    <span class="status" id="rankStatus"></span>
+  </div>
+  <div class="rank-section" id="rankArea"></div>
+</div>
+
+<!-- ===== 设置页 ===== -->
+<div class="page" id="page-settings">
+  <div class="settings-section">
+    <div class="setting-group">
+      <h4>预算告警</h4>
+      <div class="setting-row"><label>日预算 (USD):</label><input type="number" id="setDailyBudget" step="0.1" min="0" placeholder="0 = 不限"></div>
+      <div class="setting-hint">超出时弹出桌面通知</div>
+      <div class="setting-row"><label>月预算 (USD):</label><input type="number" id="setMonthlyBudget" step="1" min="0" placeholder="0 = 不限"></div>
+      <div class="setting-row"><label>单次请求阈值:</label><input type="number" id="setRequestThreshold" step="0.01" min="0" placeholder="0 = 不限"></div>
+      <div class="setting-hint">单次请求费用超过此值时通知</div>
+    </div>
+    <div class="setting-group">
+      <h4>快捷键</h4>
+      <div class="setting-row"><label>显示/隐藏窗口:</label><input type="text" id="setShortcut" placeholder="Ctrl+Shift+T"></div>
+      <div class="setting-hint">全局快捷键，随时呼出窗口</div>
+    </div>
+    <button class="primary" onclick="saveAppSettings()">保存设置</button>
+    <span class="status" id="settingsStatus" style="margin-left:12px"></span>
+    <div class="setting-group" style="margin-top:16px">
+      <h4>关于</h4>
+      <div class="setting-row"><label>当前版本:</label><span id="appVersion" style="font-size:12px;color:var(--text)">-</span></div>
+      <div class="setting-row">
+        <label>自动更新:</label>
+        <button class="export-btn" onclick="doCheckUpdate()">检查更新</button>
+        <span class="status" id="updateStatus" style="margin-left:8px"></span>
+      </div>
+      <div class="setting-hint">应用启动时自动检查，每小时检查一次</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- 主题切换 ----
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+  if (window.api?.updateTheme) window.api.updateTheme(theme);
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+applyTheme(localStorage.getItem('theme') || 'dark');
+const $ = id => document.getElementById(id);
+const fmt = n => (n || 0).toLocaleString('en-US');
+const fmtCost = c => '$' + (c || 0).toFixed(4);
+const costCls = c => c >= 0.5 ? 'cost-hi' : c >= 0.1 ? 'cost-md' : 'cost-lo';
+
+// 缓存上次加载的数据，供 refreshFiltered 复用
+let _lastRecords = [];
+
+function escapeHtml(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function toggleContent(btn) {
+  const tr = btn.closest('tr');
+  const contentRow = tr.nextElementSibling;
+  if (contentRow && contentRow.classList.contains('content-row')) {
+    const isVisible = contentRow.style.display === 'table-row';
+    contentRow.style.display = isVisible ? 'none' : 'table-row';
+    btn.textContent = isVisible ? (btn.dataset.preview || '-') : '收起';
+  }
+}
+
+// 分页状态
+const PAGE_SIZE = 50;
+let _currentPage = 0;
+let _tableRecords = [];
+
+function goPage(delta) {
+  const maxPage = Math.max(0, Math.ceil(_tableRecords.length / PAGE_SIZE) - 1);
+  _currentPage = Math.max(0, Math.min(maxPage, _currentPage + delta));
+  renderTablePage();
+}
+
+function renderTablePage() {
+  const total = _tableRecords.length;
+  if (!total) return;
+  const maxPage = Math.ceil(total / PAGE_SIZE) - 1;
+  const start = _currentPage * PAGE_SIZE;
+  const pageRecords = [..._tableRecords].reverse().slice(start, start + PAGE_SIZE);
+
+  const rows = pageRecords.map((r, i) => {
+    const idx = total - start - i;
+    const time = new Date(r.timestamp).toLocaleString('zh-CN',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const speed = r.speed==='fast' ? '<span class="tag tag-fast">fast</span>' : '';
+    const preview = escapeHtml(r.content_preview || '-');
+    const hasContent = (r.content && r.content.trim()) || (r.user_query && r.user_query.trim());
+    const previewCell = hasContent
+      ? `<td class="preview-cell" data-preview="${preview}" onclick="toggleContent(this)">${preview}</td>`
+      : `<td class="preview-cell">${preview}</td>`;
+    let expandedContent = '';
+    if (hasContent) {
+      let blocks = '';
+      if (r.user_query && r.user_query.trim()) {
+        blocks += `<div><span class="content-label label-query">Request</span><div class="content-block">${escapeHtml(r.user_query)}</div></div>`;
+      }
+      if (r.content && r.content.trim()) {
+        blocks += `<div><span class="content-label label-response">Response</span><div class="content-block">${escapeHtml(r.content)}</div></div>`;
+      }
+      expandedContent = `<tr class="content-row" style="display:none"><td colspan="10"><div class="content-wrap">${blocks}</div></td></tr>`;
+    }
+    return `<tr><td>${idx}</td><td style="white-space:nowrap">${time}</td><td>${modelTag(r.model)}${speed}</td><td class="project-cell" title="${escapeHtml(r.project)}">${escapeHtml(r.project)}</td><td class="r">${fmt(r.input_tokens)}</td><td class="r">${fmt(r.cache_creation_input_tokens)}</td><td class="r">${fmt(r.cache_read_input_tokens)}</td><td class="r">${fmt(r.output_tokens)}</td><td class="r ${costCls(r.cost_usd)}">${fmtCost(r.cost_usd)}</td>${previewCell}</tr>` + expandedContent;
+  }).join('');
+
+  const pagination = total > PAGE_SIZE
+    ? `<div class="pagination"><button onclick="goPage(-1)" ${_currentPage===0?'disabled':''}>&#9664;</button><span class="page-info">${_currentPage+1} / ${maxPage+1}</span><button onclick="goPage(1)" ${_currentPage>=maxPage?'disabled':''}>&#9654;</button></div>`
+    : '';
+
+  $('tableArea').innerHTML = `<table><thead><tr><th>#</th><th>时间</th><th>模型</th><th>项目</th><th class="r">Input</th><th class="r">Cache写</th><th class="r">Cache读</th><th class="r">Output</th><th class="r">费用</th><th>预览</th></tr></thead><tbody>${rows}</tbody></table>${pagination}`;
+}
+
+function modelTag(m) {
+  const s = (m || '').replace('claude-', '');
+  const ml = (m || '').toLowerCase();
+  let cls = 'tag-opus';
+  if (ml.includes('sonnet')) cls = 'tag-sonnet';
+  else if (ml.includes('haiku')) cls = 'tag-haiku';
+  return `<span class="tag ${cls}">${s}</span>`;
+}
+
+// ---- Tab 切换 ----
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $('page-' + t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'sessions') refreshSessions();
+    if (t.dataset.tab === 'compare') refreshCompare();
+    if (t.dataset.tab === 'ranking') refreshRanking();
+    if (t.dataset.tab === 'settings') loadAppSettings();
+  });
+});
+
+// ---- 时间范围 ----
+function getTimeOpts(selId) {
+  const v = $(selId).value;
+  if (v === 'all') return {};
+  const d = { today: 0, '3d': 3, '7d': 7, '30d': 30 }[v] ?? 7;
+  const since = new Date(); since.setDate(since.getDate() - d); since.setHours(0,0,0,0);
+  return { since: since.toISOString() };
+}
+
+function applyFilters(records) {
+  const model = $('modelFilter').value;
+  const project = $('projectFilter').value;
+  let r = records;
+  if (model) r = r.filter(x => x.model.toLowerCase().includes(model));
+  if (project) r = r.filter(x => x.project === project);
+  return r;
+}
+
+// ---- 导出 ----
+async function doExport(format) {
+  const opts = getTimeOpts('timeRange');
+  try {
+    const result = await window.api.exportData(format, opts);
+    if (result.success) {
+      $('statusText').textContent = '已导出: ' + result.path;
+    } else if (result.error) {
+      $('statusText').textContent = '导出失败: ' + result.error;
+    }
+  } catch (err) {
+    $('statusText').textContent = '导出失败: ' + err.message;
+  }
+}
+
+// ---- 统计卡片 ----
+function renderStats(records) {
+  const t = { n: records.length, i: 0, o: 0, cw: 0, cr: 0, cost: 0 };
+  for (const r of records) { t.i += r.input_tokens; t.o += r.output_tokens; t.cw += r.cache_creation_input_tokens; t.cr += r.cache_read_input_tokens; t.cost += r.cost_usd; }
+  const tot = t.i + t.o + t.cw + t.cr || 1;
+  $('statsArea').innerHTML = [
+    ['s1','总请求数',fmt(t.n),''],
+    ['s2','Input Tokens',fmt(t.i),`${((t.i/tot)*100).toFixed(1)}%`],
+    ['s3','Output Tokens',fmt(t.o),`${((t.o/tot)*100).toFixed(1)}%`],
+    ['s4','Cache 写入',fmt(t.cw),`${((t.cw/tot)*100).toFixed(1)}%`],
+    ['s5','Cache 读取',fmt(t.cr),`${((t.cr/tot)*100).toFixed(1)}%`],
+    ['s6','等价 API 费用',fmtCost(t.cost),`${fmt(t.i+t.o+t.cw+t.cr)} tokens`],
+  ].map(([c,l,v,s]) => `<div class="stat ${c}"><div class="stat-label">${l}</div><div class="stat-val">${v}</div>${s?`<div class="stat-sub">${s}</div>`:''}</div>`).join('');
+}
+
+// ---- 5h 窗口 ----
+async function renderBuckets() {
+  const opts = getTimeOpts('timeRange');
+  let buckets;
+  try {
+    buckets = await window.api.getBuckets(opts);
+  } catch (err) {
+    console.error('Failed to load buckets:', err);
+    $('bucketArea').innerHTML = '<div style="color:var(--text3);font-size:12px">加载失败</div>';
+    return;
+  }
+  if (!buckets.length) { $('bucketArea').innerHTML = '<div style="color:var(--text3);font-size:12px">暂无窗口数据</div>'; return; }
+
+  // 只显示最近8个窗口
+  const recent = buckets.slice(-8);
+  $('bucketArea').innerHTML = recent.map(b => {
+    let cls = '', badgeCls = '', badgeText = '';
+    if (b.isActive) {
+      cls = 'active'; badgeCls = 'badge-active'; badgeText = '活跃';
+      if (b.projection && b.projection.totalCost > b.costUSD * 1.5) { cls = 'warning'; badgeCls = 'badge-warn'; badgeText = '注意'; }
+    }
+    const start = new Date(b.startTime).toLocaleString('zh-CN', {hour12:false, month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const end = new Date(b.endTime).toLocaleString('zh-CN', {hour12:false, hour:'2-digit',minute:'2-digit'});
+    // 进度条（基于5h窗口已过时间）
+    const elapsed = b.isActive ? Math.min(1, (Date.now() - new Date(b.startTime)) / (5*3600000)) : 1;
+    const barColor = elapsed > 0.8 ? 'var(--red)' : elapsed > 0.5 ? 'var(--yellow)' : 'var(--blue)';
+
+    return `<div class="bucket-card ${cls}">
+      <div class="bucket-title"><span>${start} — ${end}</span>${badgeText ? `<span class="badge ${badgeCls}">${badgeText}</span>` : ''}</div>
+      <div class="bucket-cost ${costCls(b.costUSD)}">${fmtCost(b.costUSD)}</div>
+      <div class="bucket-meta">
+        ${b.requestCount} 请求 | ${fmt(b.totalTokens)} tokens<br>
+        ${b.burnRate > 0 ? `$${b.burnRate.toFixed(4)}/h` : '-'}
+        ${b.projection ? ` | 预估 ${fmtCost(b.projection.totalCost)} (${b.projection.remainingMinutes}min)` : ''}
+      </div>
+      <div class="bucket-bar"><div class="bucket-bar-fill" style="width:${(elapsed*100).toFixed(1)}%;background:${barColor}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ---- 图表 ----
+function renderCharts(records) {
+  if (!records.length) { $('chartsArea').innerHTML = ''; return; }
+  const byDate = {};
+  for (const r of records) {
+    const d = r.timestamp.slice(0,10);
+    if (!byDate[d]) byDate[d] = {cost:0,input:0,output:0,cw:0,cr:0,n:0};
+    const g = byDate[d]; g.cost+=r.cost_usd; g.input+=r.input_tokens; g.output+=r.output_tokens; g.cw+=r.cache_creation_input_tokens; g.cr+=r.cache_read_input_tokens; g.n++;
+  }
+  const dates = Object.keys(byDate).sort();
+  const maxCost = Math.max(...dates.map(d=>byDate[d].cost),0.001);
+
+  const bars = dates.map(d => {
+    const g = byDate[d]; const total = g.cost||0.001; const h = (total/maxCost)*130;
+    const allTk = g.input+g.output+g.cw+g.cr||1;
+    const tip = `${d}\n费用: ${fmtCost(g.cost)}\n请求: ${g.n}\nInput: ${fmt(g.input)}\nOutput: ${fmt(g.output)}\nCache写: ${fmt(g.cw)}\nCache读: ${fmt(g.cr)}`;
+    return `<div class="bar-col"><div class="bar-stack" style="height:${Math.max(h,2)}px"><div class="bar-tip">${tip}</div>
+      <div class="bar-seg" style="height:${h*g.input/allTk}px;background:var(--green)"></div>
+      <div class="bar-seg" style="height:${h*g.output/allTk}px;background:var(--yellow)"></div>
+      <div class="bar-seg" style="height:${h*g.cw/allTk}px;background:var(--pink)"></div>
+      <div class="bar-seg" style="height:${h*g.cr/allTk}px;background:var(--purple)"></div>
+    </div><div class="bar-lbl">${d.slice(5)}</div></div>`;
+  }).join('');
+
+  const t = {i:0,o:0,cw:0,cr:0};
+  for (const r of records) { t.i+=r.input_tokens; t.o+=r.output_tokens; t.cw+=r.cache_creation_input_tokens; t.cr+=r.cache_read_input_tokens; }
+  const total = t.i+t.o+t.cw+t.cr||1;
+  const segs = [{l:'Input',v:t.i,c:'var(--green)'},{l:'Output',v:t.o,c:'var(--yellow)'},{l:'Cache 写入',v:t.cw,c:'var(--pink)'},{l:'Cache 读取',v:t.cr,c:'var(--purple)'}];
+  const R=48,CX=60,CY=60,SW=20,CIRC=2*Math.PI*R;
+  let cum=0;
+  const circles = segs.map(s => { const p=s.v/total; const dl=p*CIRC; const off=-cum*CIRC; cum+=p; return `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" stroke-dasharray="${dl} ${CIRC-dl}" stroke-dashoffset="${off}" transform="rotate(-90 ${CX} ${CY})"/>`; }).join('');
+  const legend = segs.map(s => `<div class="legend-row"><span class="legend-dot" style="background:${s.c}"></span>${s.l}<span class="legend-val">${fmt(s.v)} (${((s.v/total)*100).toFixed(1)}%)</span></div>`).join('');
+
+  $('chartsArea').innerHTML =
+    `<div class="card"><div class="card-title">每日费用趋势</div><div class="bar-chart">${bars}</div></div>`+
+    `<div class="card"><div class="card-title">Token 分布</div><div class="donut-wrap"><svg width="120" height="120" viewBox="0 0 120 120">${circles}</svg><div class="legend">${legend}</div></div></div>`;
+}
+
+// ---- 表格 ----
+function renderTable(records) {
+  if (!records.length) { $('tableArea').innerHTML = '<div class="empty-state"><div class="icon">&#128202;</div><p>暂无数据</p></div>'; $('countText').textContent = ''; return; }
+  $('countText').textContent = `${records.length} 条`;
+  _tableRecords = records;
+  _currentPage = 0;
+  renderTablePage();
+}
+
+// ---- 概览刷新 ----
+let _refreshing = false;
+async function refresh() {
+  if (_refreshing) return;
+  _refreshing = true;
+  const btn = $('refreshBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '加载中...'; }
+  const t0 = Date.now();
+  $('statusText').textContent = '加载中...';
+  try {
+    const opts = getTimeOpts('timeRange');
+    const result = await window.api.getUsage(opts);
+    if (result?.error) throw new Error(result.error);
+    const records = result;
+    _lastRecords = records;
+    // 从已加载数据中提取项目列表，避免额外的文件扫描
+    const projects = [...new Set(records.map(r => r.project))].sort();
+    const sel = $('projectFilter'); const cur = sel.value;
+    sel.innerHTML = '<option value="">全部项目</option>' + projects.map(p => `<option value="${escapeHtml(p)}" ${p===cur?'selected':''}>${escapeHtml(p)}</option>`).join('');
+    const filtered = applyFilters(records);
+    renderStats(filtered);
+    renderCharts(filtered);
+    renderTable(filtered);
+    renderBuckets();
+    $('statusText').textContent = `${filtered.length} 条 (${Date.now()-t0}ms)`;
+  } catch (err) { $('statusText').textContent = '错误: ' + err.message; }
+  finally { _refreshing = false; if (btn) { btn.disabled = false; btn.textContent = '刷新'; } }
+}
+
+// ---- 会话页 ----
+async function refreshSessions() {
+  $('sessionStatus').textContent = '加载中...';
+  try {
+  const opts = getTimeOpts('sessionTimeRange');
+  const result = await window.api.getSessions(opts);
+  if (result?.error) throw new Error(result.error);
+  const sessions = result;
+  $('sessionStatus').textContent = `${sessions.length} 个会话`;
+  if (!sessions.length) { $('sessionList').innerHTML = '<div class="empty-state"><p>暂无会话</p></div>'; return; }
+
+  // 按项目分组
+  const groups = {};
+  for (const s of sessions) {
+    const key = s.project || 'unknown';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  }
+  // 按项目总费用排序
+  const sortedGroups = Object.entries(groups).sort((a, b) => {
+    const ca = a[1].reduce((s, x) => s + x.totalCost, 0);
+    const cb = b[1].reduce((s, x) => s + x.totalCost, 0);
+    return cb - ca;
+  });
+
+  // 缓存会话数据供按钮使用
+  window._sessionCache = {};
+  for (const s of sessions) window._sessionCache[s.sessionId] = { cwd: s.cwd || '' };
+
+  $('sessionList').innerHTML = sortedGroups.map(([project, items]) => {
+    const groupCost = items.reduce((s, x) => s + x.totalCost, 0);
+    const groupReqs = items.reduce((s, x) => s + x.requestCount, 0);
+    const cards = items.map(s => {
+      const start = new Date(s.startTime).toLocaleString('zh-CN',{hour12:false});
+      const end = new Date(s.endTime).toLocaleString('zh-CN',{hour12:false,hour:'2-digit',minute:'2-digit'});
+      const models = s.models.map(m => modelTag(m)).join(' ');
+      return `<div class="session-card" data-sid="${escapeHtml(s.sessionId)}" onclick="toggleSession(this)">
+        <div class="session-top">
+          <span class="session-id">${escapeHtml(s.sessionId.slice(0,8))}...</span>
+          ${models}
+          <button class="switch-btn" onclick="event.stopPropagation();doSwitchContext(this.closest('.session-card').dataset.sid)">切换上下文</button>
+          <div class="session-stats">
+            <span>${s.requestCount} 请求</span>
+            <span>${fmt(s.totalTokens)} tokens</span>
+            <span class="${costCls(s.totalCost)}">${fmtCost(s.totalCost)}</span>
+          </div>
+        </div>
+        <div class="session-time">${start} — ${end}</div>
+        <div class="session-detail">
+          <div class="session-chart" id="chart-${s.sessionId}"></div>
+          <div class="scroll-wrap" style="max-height:250px" id="detail-${s.sessionId}"></div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:0 2px">
+        <span style="font-size:14px;font-weight:600;color:var(--text)">${escapeHtml(project)}</span>
+        <span style="font-size:11px;color:var(--text3)">${items.length} 个上下文 | ${groupReqs} 请求 | ${fmtCost(groupCost)}</span>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+  } catch (err) { $('sessionStatus').textContent = '错误: ' + err.message; $('sessionList').innerHTML = ''; }
+}
+
+async function toggleSession(el) {
+  const wasExpanded = el.classList.contains('expanded');
+  // 关闭所有
+  document.querySelectorAll('.session-card.expanded').forEach(c => c.classList.remove('expanded'));
+  if (wasExpanded) return;
+
+  el.classList.add('expanded');
+  const sid = el.dataset.sid;
+  const detailEl = $('detail-' + sid);
+  const chartEl = $('chart-' + sid);
+
+  detailEl.innerHTML = '<div style="padding:10px;color:var(--text3)">加载中...</div>';
+  const records = await window.api.getSessionDetail(sid);
+
+  // 折线图：累计 token
+  if (records.length > 1) {
+    let cumTokens = 0;
+    const points = records.map((r, i) => {
+      cumTokens += r.input_tokens + r.output_tokens + r.cache_creation_input_tokens + r.cache_read_input_tokens;
+      return { x: i, y: cumTokens, cost: r.cost_usd };
+    });
+    const maxY = points[points.length-1].y || 1;
+    const w = chartEl.clientWidth - 20;
+    const h = 100;
+    const pathD = points.map((p,i) => {
+      const x = 10 + (p.x / (points.length-1)) * (w-10);
+      const y = h - (p.y / maxY) * (h-10);
+      return (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    chartEl.innerHTML = `<svg viewBox="0 0 ${w+20} ${h+10}">
+      <path d="${pathD}" fill="none" stroke="var(--blue)" stroke-width="2"/>
+      <text x="10" y="10" fill="var(--text3)" font-size="9">累计 ${fmt(maxY)} tokens</text>
+    </svg>`;
+  }
+
+  // 明细表
+  const rows = records.map((r,i) => {
+    const time = new Date(r.timestamp).toLocaleString('zh-CN',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const preview = escapeHtml(r.content_preview || '-');
+    const hasContent = (r.content && r.content.trim()) || (r.user_query && r.user_query.trim());
+    const previewCell = hasContent
+      ? `<td class="preview-cell" data-preview="${preview}" onclick="toggleContent(this)">${preview}</td>`
+      : `<td class="preview-cell">${preview}</td>`;
+    let expandedContent = '';
+    if (hasContent) {
+      let blocks = '';
+      if (r.user_query && r.user_query.trim()) {
+        blocks += `<div><span class="content-label label-query">Request</span><div class="content-block">${escapeHtml(r.user_query)}</div></div>`;
+      }
+      if (r.content && r.content.trim()) {
+        blocks += `<div><span class="content-label label-response">Response</span><div class="content-block">${escapeHtml(r.content)}</div></div>`;
+      }
+      expandedContent = `<tr class="content-row" style="display:none"><td colspan="9"><div class="content-wrap">${blocks}</div></td></tr>`;
+    }
+    return `<tr><td>${i+1}</td><td>${time}</td><td>${modelTag(r.model)}</td><td class="r">${fmt(r.input_tokens)}</td><td class="r">${fmt(r.cache_creation_input_tokens)}</td><td class="r">${fmt(r.cache_read_input_tokens)}</td><td class="r">${fmt(r.output_tokens)}</td><td class="r ${costCls(r.cost_usd)}">${fmtCost(r.cost_usd)}</td>${previewCell}</tr>` + expandedContent;
+  }).join('');
+  detailEl.innerHTML = `<table><thead><tr><th>#</th><th>时间</th><th>模型</th><th class="r">Input</th><th class="r">Cache写</th><th class="r">Cache读</th><th class="r">Output</th><th class="r">费用</th><th>预览</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ---- 事件绑定 ----
+$('timeRange').addEventListener('change', refresh);
+$('projectFilter').addEventListener('change', () => refreshFiltered());
+$('modelFilter').addEventListener('change', () => refreshFiltered());
+$('sessionTimeRange').addEventListener('change', refreshSessions);
+
+function refreshFiltered() {
+  const filtered = applyFilters(_lastRecords);
+  renderStats(filtered); renderCharts(filtered); renderTable(filtered);
+}
+
+// ---- 周期对比 ----
+async function refreshCompare() {
+  $('compareStatus').textContent = '加载中...';
+  try {
+    const mode = $('compareMode').value;
+    const now = new Date();
+    let curStart, curEnd, prevStart, prevEnd, curLabel, prevLabel;
+
+    if (mode === 'day') {
+      curStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      curEnd = now;
+      prevStart = new Date(curStart); prevStart.setDate(prevStart.getDate() - 1);
+      prevEnd = new Date(curStart);
+      curLabel = '今天'; prevLabel = '昨天';
+    } else if (mode === 'week') {
+      const dayOfWeek = now.getDay() || 7;
+      curStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
+      curEnd = now;
+      prevStart = new Date(curStart); prevStart.setDate(prevStart.getDate() - 7);
+      prevEnd = new Date(curStart);
+      curLabel = '本周'; prevLabel = '上周';
+    } else {
+      curStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      curEnd = now;
+      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevEnd = new Date(curStart);
+      curLabel = '本月'; prevLabel = '上月';
+    }
+
+    const result = await window.api.getUsage({ since: prevStart.toISOString() });
+    if (result?.error) throw new Error(result.error);
+    const allRecords = result;
+
+    const curRecords = allRecords.filter(r => r.timestamp >= curStart.toISOString() && r.timestamp < curEnd.toISOString());
+    const prevRecords = allRecords.filter(r => r.timestamp >= prevStart.toISOString() && r.timestamp < prevEnd.toISOString());
+
+    function summarize(records) {
+      const s = { count: records.length, cost: 0, input: 0, output: 0, cw: 0, cr: 0 };
+      for (const r of records) { s.cost += r.cost_usd; s.input += r.input_tokens; s.output += r.output_tokens; s.cw += r.cache_creation_input_tokens; s.cr += r.cache_read_input_tokens; }
+      s.totalTokens = s.input + s.output + s.cw + s.cr;
+      return s;
+    }
+
+    const cur = summarize(curRecords);
+    const prev = summarize(prevRecords);
+
+    function diffTag(curVal, prevVal) {
+      if (prevVal === 0) return curVal > 0 ? '<span class="compare-diff diff-up">NEW</span>' : '';
+      const pct = ((curVal - prevVal) / prevVal * 100).toFixed(0);
+      if (pct > 0) return `<span class="compare-diff diff-up">+${pct}%</span>`;
+      if (pct < 0) return `<span class="compare-diff diff-down">${pct}%</span>`;
+      return '<span class="compare-diff diff-same">-</span>';
+    }
+
+    const rows = [
+      ['请求数', fmt(cur.count), fmt(prev.count), diffTag(cur.count, prev.count)],
+      ['费用 (USD)', fmtCost(cur.cost), fmtCost(prev.cost), diffTag(cur.cost, prev.cost)],
+      ['Input Tokens', fmt(cur.input), fmt(prev.input), diffTag(cur.input, prev.input)],
+      ['Output Tokens', fmt(cur.output), fmt(prev.output), diffTag(cur.output, prev.output)],
+      ['Cache 写入', fmt(cur.cw), fmt(prev.cw), diffTag(cur.cw, prev.cw)],
+      ['Cache 读取', fmt(cur.cr), fmt(prev.cr), diffTag(cur.cr, prev.cr)],
+      ['总 Tokens', fmt(cur.totalTokens), fmt(prev.totalTokens), diffTag(cur.totalTokens, prev.totalTokens)],
+    ];
+
+    $('compareArea').innerHTML = `<div class="compare-grid">
+      <div class="compare-card">
+        <div class="compare-title">${curLabel} vs ${prevLabel}</div>
+        ${rows.map(([lbl, cv, pv, diff]) => `<div class="compare-row"><span class="lbl">${lbl}</span><span class="val">${cv} ${diff}</span></div>`).join('')}
+      </div>
+      <div class="compare-card">
+        <div class="compare-title">${prevLabel}</div>
+        ${rows.map(([lbl, cv, pv]) => `<div class="compare-row"><span class="lbl">${lbl}</span><span class="val">${pv}</span></div>`).join('')}
+      </div>
+    </div>`;
+    $('compareStatus').textContent = '';
+  } catch (err) { $('compareStatus').textContent = '错误: ' + err.message; }
+}
+
+// ---- 项目排行 ----
+async function refreshRanking() {
+  $('rankStatus').textContent = '加载中...';
+  try {
+    const opts = getTimeOpts('rankTimeRange');
+    const result = await window.api.getUsage(opts);
+    if (result?.error) throw new Error(result.error);
+    const records = result;
+
+    const projectMap = {};
+    for (const r of records) {
+      if (!projectMap[r.project]) projectMap[r.project] = { cost: 0, count: 0, tokens: 0 };
+      const p = projectMap[r.project];
+      p.cost += r.cost_usd; p.count++; p.tokens += r.input_tokens + r.output_tokens + r.cache_creation_input_tokens + r.cache_read_input_tokens;
+    }
+
+    const ranked = Object.entries(projectMap).sort((a, b) => b[1].cost - a[1].cost);
+    const maxCost = ranked.length > 0 ? ranked[0][1].cost : 1;
+
+    if (!ranked.length) {
+      $('rankArea').innerHTML = '<div class="empty-state"><p>暂无数据</p></div>';
+      $('rankStatus').textContent = '';
+      return;
+    }
+
+    $('rankArea').innerHTML = `<div class="rank-list">${ranked.map(([name, data], i) => {
+      const numCls = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+      const barW = ((data.cost / maxCost) * 100).toFixed(1);
+      return `<div class="rank-item">
+        <span class="rank-num ${numCls}">${i + 1}</span>
+        <span class="rank-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%"></div></div>
+        <span class="rank-cost ${costCls(data.cost)}">${fmtCost(data.cost)}</span>
+        <span class="rank-meta">${data.count} 请求<br>${fmt(data.tokens)} tk</span>
+      </div>`;
+    }).join('')}</div>`;
+    $('rankStatus').textContent = `${ranked.length} 个项目`;
+  } catch (err) { $('rankStatus').textContent = '错误: ' + err.message; }
+}
+
+// ---- 设置 ----
+async function loadAppSettings() {
+  const s = await window.api.getSettings();
+  $('setDailyBudget').value = s.dailyBudget || '';
+  $('setMonthlyBudget').value = s.monthlyBudget || '';
+  $('setRequestThreshold').value = s.requestThreshold || '';
+  $('setShortcut').value = s.shortcut || 'Ctrl+Shift+T';
+  if (window.api.getVersion) {
+    const v = await window.api.getVersion();
+    $('appVersion').textContent = 'v' + v;
+  }
+}
+
+async function doCheckUpdate() {
+  $('updateStatus').textContent = '检查中...';
+  const result = await window.api.checkUpdate();
+  if (result.error) {
+    $('updateStatus').textContent = '检查失败: ' + result.error;
+  } else {
+    $('updateStatus').textContent = '当前 v' + result.currentVersion + '，已是最新';
+  }
+  setTimeout(() => $('updateStatus').textContent = '', 5000);
+}
+
+// 监听更新状态
+if (window.api.onUpdateStatus) {
+  window.api.onUpdateStatus((data) => {
+    const el = $('updateStatus');
+    if (!el) return;
+    if (data.status === 'downloading') el.textContent = 'v' + data.version + ' 下载中...';
+    else if (data.status === 'ready') el.textContent = 'v' + data.version + ' 已就绪';
+  });
+}
+
+async function saveAppSettings() {
+  const settings = {
+    dailyBudget: parseFloat($('setDailyBudget').value) || 0,
+    monthlyBudget: parseFloat($('setMonthlyBudget').value) || 0,
+    requestThreshold: parseFloat($('setRequestThreshold').value) || 0,
+    shortcut: $('setShortcut').value || 'Ctrl+Shift+T',
+  };
+  const result = await window.api.saveSettings(settings);
+  $('settingsStatus').textContent = result.success ? '已保存' : '保存失败';
+  setTimeout(() => $('settingsStatus').textContent = '', 2000);
+}
+
+// ---- 切换上下文 ----
+async function doSwitchContext(sessionId) {
+  const cached = window._sessionCache?.[sessionId];
+  const cwd = cached?.cwd || '';
+  $('sessionStatus').textContent = '正在打开终端...';
+  const result = await window.api.switchContext(sessionId, cwd);
+  if (result.success) {
+    $('sessionStatus').textContent = '已在新终端打开会话 ' + sessionId.slice(0, 8) + '...';
+  } else {
+    $('sessionStatus').textContent = '切换失败: ' + (result.error || '未知错误');
+  }
+  setTimeout(() => $('sessionStatus').textContent = '', 3000);
+}
+
+// ---- 实时刷新（文件变化监听） ----
+if (window.api.onDataChanged) {
+  window.api.onDataChanged(() => {
+    const activePage = document.querySelector('.tab.active')?.dataset.tab;
+    if (activePage === 'overview' && !document.hidden) refresh();
+  });
+}
+
+refresh();
+let refreshInterval = setInterval(refresh, 60000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(refreshInterval);
+  } else {
+    refresh();
+    refreshInterval = setInterval(refresh, 60000);
+  }
+});
+</script>
+</body>
+</html>

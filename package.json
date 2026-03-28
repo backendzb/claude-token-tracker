@@ -1,0 +1,49 @@
+{
+  "name": "claude-token-tracker",
+  "version": "1.4.0",
+  "description": "Claude Code Token 用量追踪桌面应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "publish": "electron-builder --win --publish always"
+  },
+  "keywords": [],
+  "author": "Claude Token Tracker",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.claude.token-tracker",
+    "productName": "Claude Token Tracker",
+    "publish": {
+      "provider": "github",
+      "owner": "backendzb",
+      "repo": "claude-token-tracker"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["zh_CN", "en_US"],
+      "language": 2052,
+      "shortcutName": "Claude Token Tracker"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "data-loader.js",
+      "icon.ico"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
+  }
+}
