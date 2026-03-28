@@ -613,7 +613,7 @@ async function getSessionIndex() {
 }
 
 module.exports = {
-  loadAllUsageData, getProjectList, calculateCost, getPricing,
+  loadAllUsageData, getProjectList, calculateCost, getPricing, MODEL_PRICING,
   loadSessionList, loadSessionDetail, loadBucketData,
   loadConversation, getSessionIndex,
   exportToCSV, exportToJSON,

@@ -7,7 +7,7 @@ const fs = require('fs');
 const {
   loadAllUsageData, getProjectList,
   loadSessionList, loadSessionDetail, loadBucketData,
-  exportToCSV, exportToJSON,
+  exportToCSV, exportToJSON, MODEL_PRICING,
   loadConversation, getSessionIndex,
 } = require('./data-loader');
 
@@ -349,27 +349,59 @@ ipcMain.handle('switch-context', (_event, { sessionId, cwd }) => {
   }
 });
 
-// ---- 自动更新（仅检测，跳转 GitHub 下载） ----
+// ---- 自动更新（下载优先，30秒无进度降级为跳转浏览器） ----
 const RELEASE_URL = 'https://github.com/backendzb/claude-token-tracker/releases';
 
 function setupAutoUpdater() {
   autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  let fallbackTimer = null;
+  let hasProgress = false;
+  let updateVersion = '';
+
+  function send(data) {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-status', data);
+  }
+
+  function clearFallback() { if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; } }
+
+  function triggerFallback() {
+    clearFallback();
+    send({ status: 'fallback', version: updateVersion });
+  }
 
   autoUpdater.on('update-available', (info) => {
-    showNotification('发现新版本', `v${info.version} 可用，点击前往下载`);
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'available', version: info.version });
-    }
+    updateVersion = info.version;
+    hasProgress = false;
+    showNotification('发现新版本', `v${info.version} 可用，正在尝试下载...`);
+    send({ status: 'downloading', version: info.version, percent: 0 });
+    clearFallback();
+    fallbackTimer = setTimeout(() => { if (!hasProgress) triggerFallback(); }, 30000);
+    autoUpdater.downloadUpdate().catch(() => triggerFallback());
   });
 
-  autoUpdater.on('update-not-available', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-status', { status: 'latest' });
-    }
+  autoUpdater.on('download-progress', (progress) => {
+    hasProgress = true;
+    clearFallback();
+    send({ status: 'downloading', percent: Math.round(progress.percent) });
   });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    clearFallback();
+    send({ status: 'ready', version: info.version });
+    dialog.showMessageBox(mainWindow, {
+      type: 'info', title: '更新就绪',
+      message: `v${info.version} 已下载完成，是否立即安装并重启？`,
+      buttons: ['立即安装', '稍后'], defaultId: 0,
+    }).then(({ response }) => { if (response === 0) { isQuitting = true; autoUpdater.quitAndInstall(); } });
+  });
+
+  autoUpdater.on('update-not-available', () => send({ status: 'latest' }));
 
   autoUpdater.on('error', (err) => {
     console.error('[updater] Error:', err.message);
+    if (updateVersion) triggerFallback();
   });
 
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10000);
@@ -394,6 +426,12 @@ ipcMain.handle('check-update', async () => {
 });
 
 ipcMain.handle('get-version', () => app.getVersion());
+
+ipcMain.handle('get-pricing-map', () => MODEL_PRICING);
+
+ipcMain.handle('show-notification', (_event, { title, body }) => {
+  showNotification(title, body);
+});
 
 ipcMain.handle('open-url', (_event, url) => {
   const { shell } = require('electron');

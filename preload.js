@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   getVersion: () => ipcRenderer.invoke('get-version'),
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
+  getPricingMap: () => ipcRenderer.invoke('get-pricing-map'),
+  showNotification: (title, body) => ipcRenderer.invoke('show-notification', { title, body }),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_e, data) => callback(data)),
 });

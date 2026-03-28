@@ -1018,6 +1018,22 @@
       text-align: right;
     }
 
+    /* 分析卡片 */
+    .analysis-section { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 8px 24px; }
+    .analysis-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; position: relative; overflow: hidden; }
+    .analysis-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .analysis-card.a-blue::before { background: var(--blue); }
+    .analysis-card.a-green::before { background: var(--green); }
+    .analysis-card.a-cyan::before { background: var(--cyan); }
+    .analysis-card.a-red::before { background: var(--red); }
+    .analysis-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; }
+    .analysis-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+    .analysis-row .lbl { color: var(--text2); }
+    .analysis-row .val { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+    .anomaly-list { margin-top: 6px; }
+    .anomaly-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 11px; color: var(--text2); }
+    .anomaly-cost { color: var(--red); font-weight: 600; }
+
     /* 对比视图 */
     .compare-section {
       padding: 12px 24px;
@@ -1548,6 +1564,7 @@
       <div class="bucket-cards" id="bucketArea"></div>
     </div>
     <div class="charts" id="chartsArea"></div>
+    <div class="analysis-section" id="analysisArea"></div>
     <div class="table-section">
       <div class="table-header">
         <h3>请求明细</h3>
@@ -1921,6 +1938,105 @@
     }
 
     // ---- 表格 ----
+    // ---- 数据分析卡片 ----
+    let _pricingMap = null;
+    let _seenAnomalyIds = new Set();
+    let _initialLoadDone = false;
+
+    async function ensurePricingMap() {
+      if (!_pricingMap && window.api.getPricingMap) _pricingMap = await window.api.getPricingMap();
+    }
+
+    function renderAnalysis(records) {
+      if (!records.length) { $('analysisArea').innerHTML = ''; return; }
+      const now = new Date();
+
+      // 1A. 月度费用预测
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthRecords = records.filter(r => r.timestamp >= monthStart.toISOString());
+      const monthSpent = monthRecords.reduce((s, r) => s + r.cost_usd, 0);
+      const dayOfMonth = now.getDate();
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const daysRemaining = daysInMonth - dayOfMonth;
+      const dailyAvg = dayOfMonth > 0 ? monthSpent / dayOfMonth : 0;
+      const projected = monthSpent + dailyAvg * daysRemaining;
+
+      const forecastCard = `<div class="analysis-card a-blue">
+        <div class="analysis-title">月度费用预测</div>
+        <div class="analysis-row"><span class="lbl">本月已花费</span><span class="val">${fmtCost(monthSpent)}</span></div>
+        <div class="analysis-row"><span class="lbl">日均费用</span><span class="val">${fmtCost(dailyAvg)}</span></div>
+        <div class="analysis-row"><span class="lbl">剩余天数</span><span class="val">${daysRemaining} 天</span></div>
+        <div class="analysis-row"><span class="lbl" style="font-weight:600">预测月底</span><span class="val" style="color:var(--blue);font-size:14px">${fmtCost(projected)}</span></div>
+      </div>`;
+
+      // 1B. Cache 命中率
+      const totalCR = records.reduce((s, r) => s + r.cache_read_input_tokens, 0);
+      const totalCW = records.reduce((s, r) => s + r.cache_creation_input_tokens, 0);
+      const hitRate = (totalCR + totalCW) > 0 ? (totalCR / (totalCR + totalCW) * 100) : 0;
+      // 估算节省：cache_read 价格约为 input 的 1/10，所以节省约 90% × cache_read_tokens × input_price
+      // 用 Sonnet $3/M 作为代表 input 价格
+      const savingsPerToken = 3e-6 * 0.9; // input_price - cache_read_price ≈ 90% of input
+      const estimatedSavings = totalCR * savingsPerToken;
+
+      const cacheCard = `<div class="analysis-card a-green">
+        <div class="analysis-title">Cache 命中率</div>
+        <div class="analysis-row"><span class="lbl">命中率</span><span class="val" style="color:var(--green)">${hitRate.toFixed(1)}%</span></div>
+        <div class="analysis-row"><span class="lbl">Cache 读取</span><span class="val">${fmt(totalCR)}</span></div>
+        <div class="analysis-row"><span class="lbl">Cache 写入</span><span class="val">${fmt(totalCW)}</span></div>
+        <div class="analysis-row"><span class="lbl">估算节省</span><span class="val" style="color:var(--green)">${fmtCost(estimatedSavings)}</span></div>
+      </div>`;
+
+      // 1C. Fast 模式分析
+      const fastRecords = records.filter(r => r.speed === 'fast');
+      const fastCount = fastRecords.length;
+      const fastCost = fastRecords.reduce((s, r) => s + r.cost_usd, 0);
+      const stdEquiv = fastCost / 6; // Opus 4.6 fast_multiplier = 6
+      const fastPremium = fastCost - stdEquiv;
+
+      const fastCard = `<div class="analysis-card a-cyan">
+        <div class="analysis-title">Fast 模式分析</div>
+        <div class="analysis-row"><span class="lbl">Fast 请求数</span><span class="val">${fmt(fastCount)}</span></div>
+        <div class="analysis-row"><span class="lbl">Fast 总费用</span><span class="val">${fmtCost(fastCost)}</span></div>
+        <div class="analysis-row"><span class="lbl">标准模式等价</span><span class="val">${fmtCost(stdEquiv)}</span></div>
+        <div class="analysis-row"><span class="lbl">Fast 溢价</span><span class="val" style="color:var(--cyan)">${fastCount > 0 ? fmtCost(fastPremium) : '-'}</span></div>
+      </div>`;
+
+      // 1D. 异常消费检测
+      const avgCost = records.reduce((s, r) => s + r.cost_usd, 0) / records.length;
+      const threshold = avgCost * 3;
+      const anomalies = records.filter(r => r.cost_usd > threshold).sort((a, b) => b.cost_usd - a.cost_usd).slice(0, 5);
+
+      // 通知新异常（首次加载后才触发）
+      if (_initialLoadDone) {
+        for (const a of anomalies) {
+          const aid = a.messageId || a.timestamp;
+          if (!_seenAnomalyIds.has(aid)) {
+            _seenAnomalyIds.add(aid);
+            if (window.api.showNotification) window.api.showNotification('异常消费', `${a.model} 单次 ${fmtCost(a.cost_usd)}（均值 ${fmtCost(avgCost)}）`);
+          }
+        }
+      } else {
+        for (const a of anomalies) _seenAnomalyIds.add(a.messageId || a.timestamp);
+        _initialLoadDone = true;
+      }
+
+      const anomalyItems = anomalies.length > 0
+        ? anomalies.map(a => {
+            const t = new Date(a.timestamp).toLocaleString('zh-CN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+            return `<div class="anomaly-item"><span>${t}</span>${modelTag(a.model)}<span class="anomaly-cost">${fmtCost(a.cost_usd)}</span></div>`;
+          }).join('')
+        : '<div style="font-size:11px;color:var(--text3);padding:4px 0">无异常请求</div>';
+
+      const anomalyCard = `<div class="analysis-card a-red">
+        <div class="analysis-title">异常消费检测 <span style="font-size:10px;color:var(--text3)">(>${fmtCost(threshold)})</span></div>
+        <div class="analysis-row"><span class="lbl">平均请求费用</span><span class="val">${fmtCost(avgCost)}</span></div>
+        <div class="analysis-row"><span class="lbl">异常请求数</span><span class="val" style="color:${anomalies.length > 0 ? 'var(--red)' : 'var(--text)'}">${anomalies.length}</span></div>
+        <div class="anomaly-list">${anomalyItems}</div>
+      </div>`;
+
+      $('analysisArea').innerHTML = forecastCard + cacheCard + fastCard + anomalyCard;
+    }
+
     function renderTable(records) {
       if (!records.length) { $('tableArea').innerHTML = '<div class="empty-state"><div class="icon">&#128202;</div><p>暂无数据</p></div>'; $('countText').textContent = ''; return; }
       $('countText').textContent = `${records.length} 条`;
@@ -1951,6 +2067,7 @@
         const filtered = applyFilters(records);
         renderStats(filtered);
         renderCharts(filtered);
+        renderAnalysis(filtered);
         renderTable(filtered);
         renderBuckets();
         $('statusText').textContent = `${filtered.length} 条 (${Date.now() - t0}ms)`;
@@ -2091,7 +2208,7 @@
 
     function refreshFiltered() {
       const filtered = applyFilters(_lastRecords);
-      renderStats(filtered); renderCharts(filtered); renderTable(filtered);
+      renderStats(filtered); renderCharts(filtered); renderAnalysis(filtered); renderTable(filtered);
     }
 
     // ---- 周期对比 ----
@@ -2251,11 +2368,20 @@
       window.api.onUpdateStatus((data) => {
         const el = $('updateStatus');
         if (!el) return;
-        if (data.status === 'available') {
-          _updateUrl = 'https://github.com/backendzb/claude-token-tracker/releases/tag/v' + data.version;
-          el.textContent = '发现新版本 v' + data.version;
+        if (data.status === 'downloading') {
+          el.textContent = '下载中 ' + (data.percent || 0) + '%';
           el.style.color = 'var(--blue)';
+          $('updateActionWrap').style.display = 'none';
+        } else if (data.status === 'ready') {
+          el.textContent = 'v' + data.version + ' 已下载，准备安装';
+          el.style.color = 'var(--green)';
+          $('updateActionWrap').style.display = 'none';
+        } else if (data.status === 'fallback') {
+          _updateUrl = 'https://github.com/backendzb/claude-token-tracker/releases/tag/v' + data.version;
+          el.textContent = '自动下载失败，请手动下载 v' + data.version;
+          el.style.color = 'var(--yellow)';
           $('updateActionWrap').style.display = 'block';
+          $('updateDownloadBtn').textContent = '前往下载';
           $('updateDownloadBtn').onclick = () => window.api.openUrl(_updateUrl);
         } else if (data.status === 'latest') {
           el.textContent = '已是最新';
