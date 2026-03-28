@@ -442,6 +442,12 @@ tbody tr:last-child td { border-bottom: none; }
         <button style="font-size:11px;padding:4px 12px" onclick="doCheckUpdate()">检查</button>
         <span class="status" id="updateStatus" style="margin-left:8px"></span>
       </div>
+      <div id="updateProgressWrap" style="display:none;margin-top:6px">
+        <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+          <div id="updateProgressBar" style="height:100%;background:var(--blue);border-radius:3px;transition:width 0.3s;width:0%"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px" id="updateProgressText"></div>
+      </div>
       <div class="setting-hint">启动时自动检查，每小时检查一次</div>
     </div>
   </div>
@@ -1005,17 +1011,28 @@ async function doCheckUpdate() {
 if (window.api.onUpdateStatus) {
   window.api.onUpdateStatus((data) => {
     const el = $('updateStatus');
+    const wrap = $('updateProgressWrap');
+    const bar = $('updateProgressBar');
+    const ptxt = $('updateProgressText');
     if (!el) return;
+
     if (data.status === 'downloading') {
-      const pct = data.percent != null ? ` ${data.percent}%` : '';
-      el.textContent = (data.version ? 'v' + data.version + ' ' : '') + '下载中' + pct;
       el.style.color = 'var(--blue)';
+      if (data.version) el.textContent = 'v' + data.version + ' 下载中...';
+      if (wrap && data.percent != null) {
+        wrap.style.display = 'block';
+        bar.style.width = data.percent + '%';
+        ptxt.textContent = data.percent + '%';
+        el.textContent = (data.version ? 'v' + data.version + ' ' : '') + '下载中 ' + data.percent + '%';
+      }
     } else if (data.status === 'ready') {
       el.textContent = 'v' + data.version + ' 下载完成，可安装';
       el.style.color = 'var(--green)';
+      if (wrap) { bar.style.width = '100%'; bar.style.background = 'var(--green)'; ptxt.textContent = '下载完成'; }
     } else if (data.status === 'latest') {
       el.textContent = '已是最新';
       el.style.color = '';
+      if (wrap) wrap.style.display = 'none';
     }
   });
 }
