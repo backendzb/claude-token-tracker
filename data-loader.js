@@ -279,7 +279,7 @@ async function loadAllUsageData(options = {}) {
     await processJsonlFile(file, (obj) => {
       // 追踪用户的文本提问（非 tool_result）
       if (obj.type === 'user' && typeof obj.message?.content === 'string') {
-        lastUserQuery = obj.message.content;
+        lastUserQuery = obj.message.content.replace(/<[^>]+>/g, '').trim();
         return;
       }
 
@@ -541,7 +541,7 @@ async function loadConversation(sessionId) {
       if (typeof obj.message?.content === 'string') {
         messages.push({
           role: 'user', timestamp: obj.timestamp, uuid: obj.uuid,
-          content: obj.message.content,
+          content: obj.message.content.replace(/<[^>]+>/g, '').trim(),
         });
       }
       // 跳过 tool_result 类型的 user 消息（中间态）
@@ -593,7 +593,7 @@ async function getSessionIndex() {
       if (obj.type === 'user' && typeof obj.message?.content === 'string') {
         msgCount++;
         if (!firstUserMsg) {
-          firstUserMsg = obj.message.content.slice(0, 120).replace(/\n/g, ' ');
+          firstUserMsg = obj.message.content.replace(/<[^>]+>/g, '').trim().slice(0, 120).replace(/\n/g, ' ');
           firstTimestamp = obj.timestamp;
         }
         lastTimestamp = obj.timestamp;
