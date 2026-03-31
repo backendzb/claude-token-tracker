@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Commit Rules
+
+- Do NOT add `Co-Authored-By` lines to commit messages.
+
 ## Project Overview
 
 Claude Token Tracker is an Electron desktop app that monitors Claude Code token usage and API-equivalent costs in real-time. It reads JSONL transcripts from `~/.claude/projects/*/` and usage logs from `~/.claude/usage-logs/`. The UI is entirely in Chinese.
