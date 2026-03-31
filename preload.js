@@ -22,4 +22,8 @@ contextBridge.exposeInMainWorld('api', {
   getPricingMap: () => ipcRenderer.invoke('get-pricing-map'),
   showNotification: (title, body) => ipcRenderer.invoke('show-notification', { title, body }),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_e, data) => callback(data)),
+  toggleFloatWindow: () => ipcRenderer.invoke('toggle-float-window'),
+  getFloatVisible: () => ipcRenderer.invoke('get-float-visible'),
+  updateFloatOpacity: (opacity) => ipcRenderer.invoke('update-float-opacity', opacity),
+  onFloatToggled: (callback) => ipcRenderer.on('float-toggled', (_e, visible) => callback(visible)),
 });

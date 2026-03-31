@@ -1,6 +1,6 @@
 {
   "name": "claude-token-tracker",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "Claude Code Token 用量追踪桌面应用",
   "main": "main.js",
   "scripts": {
@@ -34,7 +34,9 @@
     "files": [
       "main.js",
       "preload.js",
+      "preload-float.js",
       "index.html",
+      "float.html",
       "data-loader.js",
       "icon.ico"
     ]

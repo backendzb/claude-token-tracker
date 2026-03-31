@@ -12,9 +12,11 @@ const {
 } = require('./data-loader');
 
 let mainWindow;
+let floatWindow = null;
 let tray = null;
 let isQuitting = false;
 let fileWatcher = null;
+let floatUpdateTimer = null;
 
 // ---- 设置持久化 ----
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'tracker-settings.json');
@@ -49,6 +51,143 @@ function saveWindowState() {
     const maximized = mainWindow.isMaximized();
     fs.writeFileSync(WINDOW_STATE_FILE, JSON.stringify({ ...bounds, maximized }));
   } catch {}
+}
+
+// ---- 悬浮窗状态持久化 ----
+const FLOAT_STATE_FILE = path.join(app.getPath('userData'), 'float-state.json');
+
+function loadFloatState() {
+  try {
+    return JSON.parse(fs.readFileSync(FLOAT_STATE_FILE, 'utf-8'));
+  } catch {
+    return { x: undefined, y: undefined };
+  }
+}
+
+function saveFloatState() {
+  if (!floatWindow || floatWindow.isDestroyed()) return;
+  try {
+    const bounds = floatWindow.getBounds();
+    fs.writeFileSync(FLOAT_STATE_FILE, JSON.stringify({ x: bounds.x, y: bounds.y }));
+  } catch {}
+}
+
+// ---- 悬浮费用窗口 ----
+function createFloatWindow() {
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    floatWindow.show();
+    floatWindow.focus();
+    return;
+  }
+
+  const state = loadFloatState();
+  const settings = loadSettings();
+  floatWindow = new BrowserWindow({
+    width: 200,
+    height: 168,
+    x: state.x,
+    y: state.y,
+    resizable: false,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    hasShadow: false,
+    title: 'API 费用',
+    icon: path.join(__dirname, 'icon.ico'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-float.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  floatWindow.loadFile('float.html');
+  floatWindow.setMenuBarVisibility(false);
+
+  const theme = settings.theme || 'dark';
+  const opacity = settings.floatOpacity != null ? settings.floatOpacity : 0.9;
+  floatWindow.webContents.on('did-finish-load', () => {
+    floatWindow.webContents.send('float-theme', theme);
+    floatWindow.webContents.send('float-opacity', opacity);
+    updateFloatData();
+  });
+
+  let saveTimeout;
+  floatWindow.on('move', () => {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveFloatState, 500);
+  });
+
+  floatWindow.on('closed', () => {
+    floatWindow = null;
+    stopFloatUpdater();
+  });
+
+  startFloatUpdater();
+}
+
+function destroyFloatWindow() {
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    floatWindow.close();
+  }
+  floatWindow = null;
+  stopFloatUpdater();
+}
+
+async function updateFloatData() {
+  if (!floatWindow || floatWindow.isDestroyed()) return;
+  try {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const todayStart = todayStr + 'T00:00:00.000Z';
+    const records = await loadAllUsageData({ since: todayStart });
+    const todayCost = records.reduce((s, r) => s + r.cost_usd, 0);
+    const requestCount = records.length;
+    const inputTokens = records.reduce((s, r) => s + r.input_tokens, 0);
+    const outputTokens = records.reduce((s, r) => s + r.output_tokens, 0);
+    const cacheTokens = records.reduce((s, r) => s + r.cache_creation_input_tokens + r.cache_read_input_tokens, 0);
+
+    // 最近使用的模型
+    const latestModel = records.length > 0 ? records[records.length - 1].model : '';
+
+    // 活跃窗口的 burn rate
+    let burnRate = 0;
+    try {
+      const buckets = await loadBucketData({});
+      const active = buckets.find(b => b.isActive);
+      if (active) burnRate = active.burnRate;
+    } catch {}
+
+    // 日预算
+    const settings = loadSettings();
+    const dailyBudget = settings.dailyBudget || 0;
+
+    floatWindow.webContents.send('float-update', {
+      todayCost,
+      requestCount,
+      inputTokens,
+      outputTokens,
+      cacheTokens,
+      burnRate,
+      latestModel,
+      dailyBudget,
+    });
+  } catch (err) {
+    console.error('[main] Float update failed:', err.message);
+  }
+}
+
+function startFloatUpdater() {
+  stopFloatUpdater();
+  floatUpdateTimer = setInterval(updateFloatData, 30000);
+}
+
+function stopFloatUpdater() {
+  if (floatUpdateTimer) {
+    clearInterval(floatUpdateTimer);
+    floatUpdateTimer = null;
+  }
 }
 
 // ---- 窗口创建 ----
@@ -159,6 +298,8 @@ function startFileWatcher() {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('data-changed');
           }
+          // 更新悬浮窗
+          updateFloatData();
           // 检查预算
           checkBudgetAlerts();
         }, 2000);
@@ -230,6 +371,8 @@ function showNotification(title, body) {
 function registerShortcut() {
   globalShortcut.unregisterAll();
   const settings = loadSettings();
+
+  // 主窗口快捷键
   const key = settings.shortcut || 'Ctrl+Shift+T';
   try {
     globalShortcut.register(key, () => {
@@ -243,6 +386,24 @@ function registerShortcut() {
     });
   } catch (err) {
     console.error('[main] Failed to register shortcut:', err.message);
+  }
+
+  // 悬浮窗快捷键
+  const floatKey = settings.floatShortcut;
+  if (floatKey) {
+    try {
+      globalShortcut.register(floatKey, () => {
+        if (floatWindow && !floatWindow.isDestroyed()) {
+          destroyFloatWindow();
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('float-toggled', false);
+        } else {
+          createFloatWindow();
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('float-toggled', true);
+        }
+      });
+    } catch (err) {
+      console.error('[main] Failed to register float shortcut:', err.message);
+    }
   }
 }
 
@@ -336,6 +497,44 @@ ipcMain.handle('update-theme', (_event, theme) => {
     });
     mainWindow.setBackgroundColor(theme === 'dark' ? '#0d1117' : '#ffffff');
   } catch {}
+  // 同步悬浮窗主题
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    floatWindow.webContents.send('float-theme', theme);
+  }
+  // 保存主题到设置
+  const settings = loadSettings();
+  settings.theme = theme;
+  saveSettings(settings);
+});
+
+// 悬浮窗 IPC
+ipcMain.handle('toggle-float-window', () => {
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    destroyFloatWindow();
+    return { visible: false };
+  } else {
+    createFloatWindow();
+    return { visible: true };
+  }
+});
+
+ipcMain.handle('get-float-visible', () => {
+  return !!(floatWindow && !floatWindow.isDestroyed());
+});
+
+ipcMain.handle('float-set-always-on-top', (_event, flag) => {
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    floatWindow.setAlwaysOnTop(!!flag);
+  }
+});
+
+ipcMain.handle('update-float-opacity', (_event, opacity) => {
+  if (floatWindow && !floatWindow.isDestroyed()) {
+    floatWindow.webContents.send('float-opacity', opacity);
+  }
+  const settings = loadSettings();
+  settings.floatOpacity = opacity;
+  saveSettings(settings);
 });
 
 // 切换上下文 IPC

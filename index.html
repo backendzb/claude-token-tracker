@@ -1679,10 +1679,29 @@
         <div class="setting-hint">单次请求费用超过此值时通知</div>
       </div>
       <div class="setting-group">
+        <h4>悬浮窗</h4>
+        <div class="setting-row">
+          <label>悬浮显示 API 费用:</label>
+          <button id="floatToggleBtn" style="font-size:11px;padding:4px 12px" onclick="toggleFloatWindow()">开启</button>
+          <span class="status" id="floatStatus" style="margin-left:8px"></span>
+        </div>
+        <div class="setting-hint">始终置顶的小窗口，实时显示今日费用、请求数、token 明细和速率</div>
+        <div class="setting-row">
+          <label>悬浮窗透明度:</label>
+          <input type="range" id="setFloatOpacity" min="0.3" max="1" step="0.05" value="0.9"
+            style="width:120px;vertical-align:middle" oninput="previewFloatOpacity(this.value)">
+          <span id="floatOpacityVal" style="font-size:11px;color:var(--text2);margin-left:4px">90%</span>
+        </div>
+        <div class="setting-hint">鼠标悬停时自动恢复完全不透明</div>
+      </div>
+      <div class="setting-group">
         <h4>快捷键</h4>
         <div class="setting-row"><label>显示/隐藏窗口:</label><input type="text" id="setShortcut" placeholder="Ctrl+Shift+T">
         </div>
         <div class="setting-hint">全局快捷键，随时呼出窗口</div>
+        <div class="setting-row"><label>悬浮窗开关:</label><input type="text" id="setFloatShortcut" placeholder="如 Ctrl+Shift+F">
+        </div>
+        <div class="setting-hint">快捷键切换悬浮费用窗口</div>
       </div>
       <button class="primary" onclick="saveAppSettings()">保存设置</button>
       <span class="status" id="settingsStatus" style="margin-left:12px"></span>
@@ -2336,10 +2355,31 @@
       $('setMonthlyBudget').value = s.monthlyBudget || '';
       $('setRequestThreshold').value = s.requestThreshold || '';
       $('setShortcut').value = s.shortcut || 'Ctrl+Shift+T';
+      $('setFloatShortcut').value = s.floatShortcut || '';
+      const opacity = s.floatOpacity != null ? s.floatOpacity : 0.9;
+      $('setFloatOpacity').value = opacity;
+      $('floatOpacityVal').textContent = Math.round(opacity * 100) + '%';
       if (window.api.getVersion) {
         const v = await window.api.getVersion();
         $('appVersion').textContent = 'v' + v;
       }
+      // 更新悬浮窗按钮状态
+      if (window.api.getFloatVisible) {
+        const visible = await window.api.getFloatVisible();
+        $('floatToggleBtn').textContent = visible ? '关闭' : '开启';
+      }
+    }
+
+    async function toggleFloatWindow() {
+      const result = await window.api.toggleFloatWindow();
+      $('floatToggleBtn').textContent = result.visible ? '关闭' : '开启';
+      $('floatStatus').textContent = result.visible ? '已开启' : '已关闭';
+      setTimeout(() => $('floatStatus').textContent = '', 2000);
+    }
+
+    function previewFloatOpacity(val) {
+      $('floatOpacityVal').textContent = Math.round(val * 100) + '%';
+      if (window.api.updateFloatOpacity) window.api.updateFloatOpacity(parseFloat(val));
     }
 
     let _updateUrl = '';
@@ -2391,12 +2431,21 @@
       });
     }
 
+    // 快捷键切换悬浮窗时同步按钮状态
+    if (window.api.onFloatToggled) {
+      window.api.onFloatToggled((visible) => {
+        $('floatToggleBtn').textContent = visible ? '关闭' : '开启';
+      });
+    }
+
     async function saveAppSettings() {
       const settings = {
         dailyBudget: parseFloat($('setDailyBudget').value) || 0,
         monthlyBudget: parseFloat($('setMonthlyBudget').value) || 0,
         requestThreshold: parseFloat($('setRequestThreshold').value) || 0,
         shortcut: $('setShortcut').value || 'Ctrl+Shift+T',
+        floatShortcut: $('setFloatShortcut').value || '',
+        floatOpacity: parseFloat($('setFloatOpacity').value) || 0.9,
       };
       const result = await window.api.saveSettings(settings);
       $('settingsStatus').textContent = result.success ? '已保存' : '保存失败';

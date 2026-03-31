@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root[data-theme="dark"] {
+    --bg: rgba(13, 17, 23, 0.92);
+    --bg2: rgba(22, 27, 34, 0.85);
+    --border: rgba(48, 54, 61, 0.6);
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #484f58;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --purple: #bc8cff;
+  }
+  :root[data-theme="light"] {
+    --bg: rgba(255, 255, 255, 0.94);
+    --bg2: rgba(246, 248, 250, 0.9);
+    --border: rgba(208, 215, 222, 0.6);
+    --text: #1f2328;
+    --text2: #656d76;
+    --text3: #8b949e;
+    --green: #1a7f37;
+    --yellow: #9a6700;
+    --red: #cf222e;
+    --blue: #0969da;
+    --purple: #8250df;
+  }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: transparent;
+    user-select: none;
+    overflow: hidden;
+  }
+  .container {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    -webkit-app-region: drag;
+    cursor: move;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  /* 顶部栏 */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px 2px;
+  }
+  .title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.3px;
+  }
+  .header-actions {
+    display: flex;
+    gap: 2px;
+    -webkit-app-region: no-drag;
+  }
+  .hdr-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 1px 4px;
+    line-height: 1;
+    border-radius: 3px;
+    transition: color 0.15s;
+  }
+  .hdr-btn:hover { color: var(--text); }
+  .hdr-btn.pin-active { color: var(--blue); opacity: 1; }
+  .hdr-btn.pin-inactive { opacity: 0.35; }
+  .close-btn:hover { color: var(--red) !important; }
+
+  /* 主费用区 */
+  .cost-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 0 12px;
+  }
+  .cost {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .cost.green { color: var(--green); }
+  .cost.yellow { color: var(--yellow); }
+  .cost.red { color: var(--red); }
+  .cost-label {
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+
+  /* 分割线 */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 10px 3px;
+  }
+
+  /* 指标网格 */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
+    padding: 0 12px 4px;
+  }
+  .metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+  .metric-label {
+    font-size: 9px;
+    color: var(--text3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .metric-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .metric-val.rate { color: var(--blue); }
+  .metric-val.model { color: var(--purple); font-weight: 500; font-size: 9px; }
+
+  /* 预算进度条 */
+  .budget-bar-wrap {
+    padding: 1px 12px 6px;
+  }
+  .budget-bar {
+    height: 3px;
+    background: var(--bg2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .budget-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease, background 0.3s;
+  }
+  .budget-bar-wrap.hidden { display: none; }
+
+  /* 透明度调节 — 鼠标悬停时全不透明 */
+  .container { opacity: var(--opacity, 1); transition: opacity 0.2s; }
+  .container:hover { opacity: 1 !important; }
+</style>
+</head>
+<body>
+<div class="container" id="container">
+  <div class="header">
+    <span class="title">API 费用</span>
+    <div class="header-actions">
+      <button class="hdr-btn pin-active" id="pinBtn" title="置顶">📌</button>
+      <button class="hdr-btn close-btn" id="closeBtn" title="关闭">✕</button>
+    </div>
+  </div>
+  <div class="cost-row">
+    <div class="cost green" id="todayCost">$0.0000</div>
+    <div class="cost-label">今日</div>
+  </div>
+  <div class="divider"></div>
+  <div class="metrics">
+    <div class="metric"><span class="metric-label">请求</span><span class="metric-val" id="requests">0</span></div>
+    <div class="metric"><span class="metric-label">速率</span><span class="metric-val rate" id="burnRate">-</span></div>
+    <div class="metric"><span class="metric-label">Input</span><span class="metric-val" id="inputTokens">0</span></div>
+    <div class="metric"><span class="metric-label">Output</span><span class="metric-val" id="outputTokens">0</span></div>
+    <div class="metric"><span class="metric-label">Cache</span><span class="metric-val" id="cacheTokens">0</span></div>
+    <div class="metric"><span class="metric-label">总Token</span><span class="metric-val" id="totalTokens" style="color:var(--text)">0</span></div>
+    <div class="metric" style="grid-column:1/-1"><span class="metric-label">模型</span><span class="metric-val model" id="model">-</span></div>
+  </div>
+  <div class="budget-bar-wrap hidden" id="budgetWrap">
+    <div class="budget-bar"><div class="budget-bar-fill" id="budgetFill"></div></div>
+  </div>
+</div>
+<script>
+  const $ = id => document.getElementById(id);
+
+  function fmt(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
+  }
+
+  function costClass(cost) {
+    if (cost >= 5) return 'red';
+    if (cost >= 1) return 'yellow';
+    return 'green';
+  }
+
+  function shortModel(m) {
+    if (!m || m === 'unknown') return '-';
+    // claude-opus-4-6-20260205 -> Opus 4.6
+    return m.replace(/^claude-/, '')
+      .replace(/-\d{8}$/, '')
+      .replace(/(\w+)-(\d+)-(\d+)/, (_, name, maj, min) => name.charAt(0).toUpperCase() + name.slice(1) + ' ' + maj + '.' + min)
+      .replace(/(\w+)-(\d+)$/, (_, name, ver) => name.charAt(0).toUpperCase() + name.slice(1) + ' ' + ver);
+  }
+
+  window.floatApi.onUpdate((data) => {
+    if (!data) return;
+
+    // 费用
+    const costEl = $('todayCost');
+    costEl.textContent = '$' + data.todayCost.toFixed(4);
+    costEl.className = 'cost ' + costClass(data.todayCost);
+
+    // 指标
+    $('requests').textContent = data.requestCount;
+    $('inputTokens').textContent = fmt(data.inputTokens);
+    $('outputTokens').textContent = fmt(data.outputTokens);
+    $('cacheTokens').textContent = fmt(data.cacheTokens);
+    $('totalTokens').textContent = fmt(data.inputTokens + data.outputTokens + data.cacheTokens);
+    $('burnRate').textContent = data.burnRate > 0 ? '$' + data.burnRate.toFixed(4) + '/h' : '-';
+    $('model').textContent = shortModel(data.latestModel);
+
+    // 预算进度条
+    if (data.dailyBudget > 0) {
+      $('budgetWrap').classList.remove('hidden');
+      const pct = Math.min(100, (data.todayCost / data.dailyBudget) * 100);
+      const fill = $('budgetFill');
+      fill.style.width = pct + '%';
+      fill.style.background = pct >= 100 ? 'var(--red)' : pct >= 75 ? 'var(--yellow)' : 'var(--green)';
+    } else {
+      $('budgetWrap').classList.add('hidden');
+    }
+  });
+
+  window.floatApi.onTheme((theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+  });
+
+  window.floatApi.onOpacity((opacity) => {
+    $('container').style.setProperty('--opacity', opacity);
+  });
+
+  // 置顶按钮
+  let pinned = true;
+  function updatePinUI() {
+    const btn = $('pinBtn');
+    btn.classList.toggle('pin-active', pinned);
+    btn.classList.toggle('pin-inactive', !pinned);
+    btn.title = pinned ? '已置顶 — 点击取消' : '未置顶 — 点击置顶';
+  }
+  updatePinUI();
+
+  $('pinBtn').addEventListener('click', () => {
+    pinned = !pinned;
+    updatePinUI();
+    window.floatApi.setAlwaysOnTop(pinned);
+  });
+
+  $('closeBtn').addEventListener('click', () => {
+    window.floatApi.close();
+  });
+</script>
+</body>
+</html>
