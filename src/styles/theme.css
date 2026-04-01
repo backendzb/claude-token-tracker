@@ -1,5 +1,6 @@
+/* ===== 深海蓝（默认暗色）===== */
 :root,
-[data-theme="dark"] {
+[data-theme="deep-ocean"] {
   --bg: #1a1a2e;
   --bg-sidebar: #16162a;
   --bg-card: #1e1e38;
@@ -28,6 +29,147 @@
   --btn-primary-hover: #7c7ff7;
 }
 
+/* ===== 纯黑（OLED）===== */
+[data-theme="midnight"] {
+  --bg: #000000;
+  --bg-sidebar: #0a0a0a;
+  --bg-card: #111111;
+  --bg-input: #1a1a1a;
+  --border: #222222;
+  --text: #e0e0e0;
+  --text2: #808080;
+  --text3: #555555;
+  --blue: #6366f1;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f85149;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --cyan: #22d3ee;
+  --orange: #f0883e;
+  --tag-opus-bg: #1a1030;
+  --tag-opus-fg: #a78bfa;
+  --tag-sonnet-bg: #0a2a1a;
+  --tag-sonnet-fg: #34d399;
+  --tag-haiku-bg: #2a1f00;
+  --tag-haiku-fg: #fbbf24;
+  --btn-primary: #6366f1;
+  --btn-primary-hover: #7c7ff7;
+}
+
+/* ===== GitHub Dark ===== */
+[data-theme="github-dark"] {
+  --bg: #0d1117;
+  --bg-sidebar: #010409;
+  --bg-card: #161b22;
+  --bg-input: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #484f58;
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --purple: #a371f7;
+  --pink: #f778ba;
+  --cyan: #39d2c0;
+  --orange: #f0883e;
+  --tag-opus-bg: #3b1d60;
+  --tag-opus-fg: #d2a8ff;
+  --tag-sonnet-bg: #1a3a1a;
+  --tag-sonnet-fg: #7ee787;
+  --tag-haiku-bg: #3d2b00;
+  --tag-haiku-fg: #e3b341;
+  --btn-primary: #238636;
+  --btn-primary-hover: #2ea043;
+}
+
+/* ===== Dracula ===== */
+[data-theme="dracula"] {
+  --bg: #282a36;
+  --bg-sidebar: #21222c;
+  --bg-card: #2e303e;
+  --bg-input: #343746;
+  --border: #44475a;
+  --text: #f8f8f2;
+  --text2: #9da0b3;
+  --text3: #6272a4;
+  --blue: #8be9fd;
+  --green: #50fa7b;
+  --yellow: #f1fa8c;
+  --red: #ff5555;
+  --purple: #bd93f9;
+  --pink: #ff79c6;
+  --cyan: #8be9fd;
+  --orange: #ffb86c;
+  --tag-opus-bg: #332a50;
+  --tag-opus-fg: #bd93f9;
+  --tag-sonnet-bg: #1a3a2a;
+  --tag-sonnet-fg: #50fa7b;
+  --tag-haiku-bg: #3a3520;
+  --tag-haiku-fg: #f1fa8c;
+  --btn-primary: #bd93f9;
+  --btn-primary-hover: #caa8ff;
+}
+
+/* ===== Nord ===== */
+[data-theme="nord"] {
+  --bg: #2e3440;
+  --bg-sidebar: #272c36;
+  --bg-card: #3b4252;
+  --bg-input: #434c5e;
+  --border: #4c566a;
+  --text: #eceff4;
+  --text2: #a3b1c5;
+  --text3: #6b7d99;
+  --blue: #88c0d0;
+  --green: #a3be8c;
+  --yellow: #ebcb8b;
+  --red: #bf616a;
+  --purple: #b48ead;
+  --pink: #d08ca8;
+  --cyan: #8fbcbb;
+  --orange: #d08770;
+  --tag-opus-bg: #352e44;
+  --tag-opus-fg: #b48ead;
+  --tag-sonnet-bg: #2a3428;
+  --tag-sonnet-fg: #a3be8c;
+  --tag-haiku-bg: #3a3528;
+  --tag-haiku-fg: #ebcb8b;
+  --btn-primary: #5e81ac;
+  --btn-primary-hover: #6d8fba;
+}
+
+/* ===== Monokai ===== */
+[data-theme="monokai"] {
+  --bg: #272822;
+  --bg-sidebar: #1e1f1a;
+  --bg-card: #2d2e28;
+  --bg-input: #383930;
+  --border: #49483e;
+  --text: #f8f8f2;
+  --text2: #a6a690;
+  --text3: #75715e;
+  --blue: #66d9ef;
+  --green: #a6e22e;
+  --yellow: #e6db74;
+  --red: #f92672;
+  --purple: #ae81ff;
+  --pink: #f92672;
+  --cyan: #66d9ef;
+  --orange: #fd971f;
+  --tag-opus-bg: #2d2640;
+  --tag-opus-fg: #ae81ff;
+  --tag-sonnet-bg: #283020;
+  --tag-sonnet-fg: #a6e22e;
+  --tag-haiku-bg: #383020;
+  --tag-haiku-fg: #e6db74;
+  --btn-primary: #a6e22e;
+  --btn-primary-hover: #b8f040;
+}
+
+/* ===== 浅色 ===== */
 [data-theme="light"] {
   --bg: #f0f0f5;
   --bg-sidebar: #ffffff;
@@ -53,4 +195,32 @@
   --tag-haiku-fg: #7d5600;
   --btn-primary: #6366f1;
   --btn-primary-hover: #7c7ff7;
+}
+
+/* ===== GitHub Light ===== */
+[data-theme="github-light"] {
+  --bg: #ffffff;
+  --bg-sidebar: #f6f8fa;
+  --bg-card: #ffffff;
+  --bg-input: #f6f8fa;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text2: #656d76;
+  --text3: #8b949e;
+  --blue: #0969da;
+  --green: #1a7f37;
+  --yellow: #9a6700;
+  --red: #cf222e;
+  --purple: #8250df;
+  --pink: #bf3989;
+  --cyan: #1b7c83;
+  --orange: #bc4c00;
+  --tag-opus-bg: #eddeff;
+  --tag-opus-fg: #6639a6;
+  --tag-sonnet-bg: #dafbe1;
+  --tag-sonnet-fg: #1a7f37;
+  --tag-haiku-bg: #fff8c5;
+  --tag-haiku-fg: #7d5600;
+  --btn-primary: #2da44e;
+  --btn-primary-hover: #2c974b;
 }

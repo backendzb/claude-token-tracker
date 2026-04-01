@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { emitTo } from '@tauri-apps/api/event';
 import { api } from '../../api';
+import { themes } from '../../themes';
 import './SettingsPage.css';
 
 function BatterySlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -38,7 +39,12 @@ function BatterySlider({ value, onChange }: { value: number; onChange: (v: numbe
   );
 }
 
-export default function SettingsPage() {
+interface SettingsProps {
+  currentTheme: string;
+  onThemeChange: (themeId: string) => void;
+}
+
+export default function SettingsPage({ currentTheme, onThemeChange }: SettingsProps) {
   const [dailyBudget, setDailyBudget] = useState('');
   const [monthlyBudget, setMonthlyBudget] = useState('');
   const [requestThreshold, setRequestThreshold] = useState('');
@@ -83,9 +89,41 @@ export default function SettingsPage() {
     setFloatVisible(result?.visible ?? false);
   };
 
+  const darkThemes = themes.filter(t => t.group === 'dark');
+  const lightThemes = themes.filter(t => t.group === 'light');
+
   return (
     <div className="settings-page">
       <div className="settings-section">
+        <div className="setting-group">
+          <h4>主题</h4>
+          <div className="theme-label">暗色</div>
+          <div className="theme-grid">
+            {darkThemes.map(t => (
+              <div
+                key={t.id}
+                className={`theme-card ${currentTheme === t.id ? 'active' : ''}`}
+                onClick={() => onThemeChange(t.id)}
+              >
+                <div className="theme-swatch" style={{ background: t.preview }} />
+                <span className="theme-name">{t.name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="theme-label" style={{ marginTop: 12 }}>亮色</div>
+          <div className="theme-grid">
+            {lightThemes.map(t => (
+              <div
+                key={t.id}
+                className={`theme-card ${currentTheme === t.id ? 'active' : ''}`}
+                onClick={() => onThemeChange(t.id)}
+              >
+                <div className="theme-swatch" style={{ background: t.preview, border: '1px solid #ccc' }} />
+                <span className="theme-name">{t.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="setting-group">
           <h4>预算告警</h4>
           <div className="setting-row">

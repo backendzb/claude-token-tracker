@@ -10,6 +10,7 @@ import SessionsPage from './components/sessions/SessionsPage';
 import ChatPage from './components/chat/ChatPage';
 import SettingsPage from './components/settings/SettingsPage';
 import FloatWindow from './components/float/FloatWindow';
+import { applyTheme, getStoredTheme } from './themes';
 import { api } from './api';
 import './App.css';
 
@@ -24,43 +25,41 @@ const pageTitles: Record<string, string> = {
 
 function App() {
   const [activePage, setActivePage] = useState('总览');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState(getStoredTheme());
 
   useEffect(() => {
     if (isFloat) return;
-    const saved = localStorage.getItem('theme') as 'dark' | 'light' | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    }
+    applyTheme(theme);
   }, []);
 
   if (isFloat) {
     return <FloatWindow />;
   }
 
-  const toggleTheme = async () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+  const changeTheme = async (themeId: string) => {
+    setTheme(themeId);
+    applyTheme(themeId);
     const settings = await api.getSettings();
-    await api.saveSettings({ ...settings, theme: next });
-    emitTo('float', 'theme-changed', next);
+    await api.saveSettings({ ...settings, theme: themeId });
+    emitTo('float', 'theme-changed', themeId);
   };
 
   return (
     <div className="app-layout">
       <Sidebar active={activePage} onChange={setActivePage} />
       <div className="app-content">
-        <PageHeader title={pageTitles[activePage]} onToggleTheme={toggleTheme} />
+        <PageHeader title={pageTitles[activePage]} onToggleTheme={() => {
+          // Quick toggle between current and light/dark
+          const next = theme.includes('light') ? 'deep-ocean' : 'light';
+          changeTheme(next);
+        }} />
         <div className="app-page">
           {activePage === '总览' && <OverviewPage />}
           {activePage === '对比' && <ComparePage />}
           {activePage === '排名' && <RankingPage />}
           {activePage === '会话' && <SessionsPage />}
           {activePage === '对话' && <ChatPage />}
-          {activePage === '设置' && <SettingsPage />}
+          {activePage === '设置' && <SettingsPage currentTheme={theme} onThemeChange={changeTheme} />}
         </div>
       </div>
     </div>

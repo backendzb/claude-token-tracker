@@ -16,9 +16,17 @@ interface FloatData {
   latestModel: string;
 }
 
-const THEMES = {
-  dark: { bg: [30, 30, 56], text: '#ffffff', text2: '#8888aa', text3: '#666688', border: '#2a2a4a', blue: '#6366f1', green: '#34d399', yellow: '#fbbf24', red: '#f85149', purple: '#a78bfa' },
-  light: { bg: [255, 255, 255], text: '#1a1a2e', text2: '#6b7280', text3: '#9ca3af', border: '#e2e2ea', blue: '#6366f1', green: '#1a7f37', yellow: '#9a6700', red: '#cf222e', purple: '#8250df' },
+type ThemeColors = { bg: number[]; text: string; text2: string; text3: string; border: string; blue: string; green: string; yellow: string; red: string; purple: string };
+
+const THEMES: Record<string, ThemeColors> = {
+  'deep-ocean': { bg: [30, 30, 56], text: '#ffffff', text2: '#8888aa', text3: '#666688', border: '#2a2a4a', blue: '#6366f1', green: '#34d399', yellow: '#fbbf24', red: '#f85149', purple: '#a78bfa' },
+  'midnight': { bg: [0, 0, 0], text: '#e0e0e0', text2: '#808080', text3: '#555555', border: '#222222', blue: '#6366f1', green: '#34d399', yellow: '#fbbf24', red: '#f85149', purple: '#a78bfa' },
+  'github-dark': { bg: [13, 17, 23], text: '#e6edf3', text2: '#8b949e', text3: '#484f58', border: '#30363d', blue: '#58a6ff', green: '#3fb950', yellow: '#d29922', red: '#f85149', purple: '#a371f7' },
+  'dracula': { bg: [40, 42, 54], text: '#f8f8f2', text2: '#9da0b3', text3: '#6272a4', border: '#44475a', blue: '#8be9fd', green: '#50fa7b', yellow: '#f1fa8c', red: '#ff5555', purple: '#bd93f9' },
+  'nord': { bg: [46, 52, 64], text: '#eceff4', text2: '#a3b1c5', text3: '#6b7d99', border: '#4c566a', blue: '#88c0d0', green: '#a3be8c', yellow: '#ebcb8b', red: '#bf616a', purple: '#b48ead' },
+  'monokai': { bg: [39, 40, 34], text: '#f8f8f2', text2: '#a6a690', text3: '#75715e', border: '#49483e', blue: '#66d9ef', green: '#a6e22e', yellow: '#e6db74', red: '#f92672', purple: '#ae81ff' },
+  'light': { bg: [240, 240, 245], text: '#1a1a2e', text2: '#6b7280', text3: '#9ca3af', border: '#e2e2ea', blue: '#6366f1', green: '#1a7f37', yellow: '#9a6700', red: '#cf222e', purple: '#8250df' },
+  'github-light': { bg: [255, 255, 255], text: '#1f2328', text2: '#656d76', text3: '#8b949e', border: '#d0d7de', blue: '#0969da', green: '#1a7f37', yellow: '#9a6700', red: '#cf222e', purple: '#8250df' },
 };
 
 function fmt(n: number) {
@@ -50,7 +58,7 @@ export default function FloatWindow() {
   });
   const [pinned, setPinned] = useState(true);
   const [opacity, setOpacity] = useState(0.9);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState('deep-ocean');
   const [hover, setHover] = useState(false);
 
   const loadData = async () => {
@@ -90,7 +98,7 @@ export default function FloatWindow() {
     loadData();
     const timer = setInterval(loadData, 30000);
     const unlistenData = listen('data-changed', () => loadData());
-    const unlistenTheme = listen<string>('theme-changed', (e) => setTheme(e.payload as 'dark' | 'light'));
+    const unlistenTheme = listen<string>('theme-changed', (e) => setTheme(e.payload));
     const unlistenOpacity = listen<number>('opacity-changed', (e) => setOpacity(e.payload));
 
     return () => {
@@ -101,7 +109,7 @@ export default function FloatWindow() {
     };
   }, []);
 
-  const t = THEMES[theme];
+  const t = THEMES[theme] || THEMES['deep-ocean'];
   const [r, g, b] = t.bg;
   const alpha = hover ? 1 : opacity;
 
