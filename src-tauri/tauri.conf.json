@@ -38,14 +38,14 @@
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com"
     },
     "trayIcon": {
-      "iconPath": "icons/icon.ico",
+      "iconPath": "icons/icon-32.png",
       "tooltip": "Claude Token Tracker"
     }
   },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "icon": ["icons/icon.ico"],
+    "icon": ["icons/icon-256.png", "icons/icon-128.png", "icons/icon-64.png", "icons/icon-32.png"],
     "windows": {
       "nsis": {
         "languages": ["SimpChinese", "English"],

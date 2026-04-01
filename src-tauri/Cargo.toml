@@ -8,6 +8,11 @@ edition = "2021"
 name = "claude_token_tracker"
 crate-type = ["lib", "cdylib", "staticlib"]
 
+[profile.release]
+opt-level = 1
+codegen-units = 16
+lto = false
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
