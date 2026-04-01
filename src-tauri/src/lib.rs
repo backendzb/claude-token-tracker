@@ -230,6 +230,7 @@ pub fn run() {
             conversation::load_conversation,
             system::get_pricing_map,
             system::export_data,
+            system::get_stats_cache,
             system::switch_context,
             toggle_float_window,
             get_float_visible,

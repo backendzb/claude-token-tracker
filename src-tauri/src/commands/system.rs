@@ -131,6 +131,17 @@ pub fn install_hook(app_handle: &tauri::AppHandle) {
     }
 }
 
+/// Read Claude Code's stats-cache.json for quick stats
+#[tauri::command]
+pub fn get_stats_cache() -> Value {
+    let home = dirs::home_dir().unwrap_or_default();
+    let path = home.join(".claude").join("stats-cache.json");
+    match fs::read_to_string(&path) {
+        Ok(s) => serde_json::from_str(&s).unwrap_or(serde_json::json!(null)),
+        Err(_) => serde_json::json!(null),
+    }
+}
+
 #[tauri::command]
 pub fn switch_context(session_id: String, cwd: String) -> Result<Value, String> {
     let target_cwd = if !cwd.is_empty() && std::path::Path::new(&cwd).exists() {
