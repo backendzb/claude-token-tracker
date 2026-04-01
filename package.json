@@ -1,51 +1,25 @@
 {
   "name": "claude-token-tracker",
-  "version": "1.9.0",
-  "description": "Claude Code Token 用量追踪桌面应用",
-  "main": "main.js",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --win",
-    "publish": "electron-builder --win --publish always"
-  },
-  "keywords": [],
-  "author": "Claude Token Tracker",
-  "license": "ISC",
-  "type": "commonjs",
-  "build": {
-    "appId": "com.claude.token-tracker",
-    "productName": "Claude Token Tracker",
-    "publish": {
-      "provider": "github",
-      "owner": "backendzb",
-      "repo": "claude-token-tracker"
-    },
-    "win": {
-      "target": "nsis",
-      "icon": "icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["zh_CN", "en_US"],
-      "language": 2052,
-      "shortcutName": "Claude Token Tracker"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "preload-float.js",
-      "index.html",
-      "float.html",
-      "data-loader.js",
-      "icon.ico"
-    ]
-  },
-  "devDependencies": {
-    "electron": "^35.0.0",
-    "electron-builder": "^26.8.1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "tauri": "tauri"
   },
   "dependencies": {
-    "electron-updater": "^6.8.3"
+    "@tauri-apps/api": "^2.10.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "esbuild": "^0.27.4",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3"
   }
 }

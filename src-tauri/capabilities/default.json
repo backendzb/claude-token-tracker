@@ -1,0 +1,27 @@
+{
+  "identifier": "default",
+  "description": "Default permissions for Claude Token Tracker",
+  "windows": ["main", "float"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-always-on-top",
+    "fs:allow-read-text-file",
+    "fs:allow-exists",
+    "fs:allow-read-dir",
+    "notification:default",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister-all",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "shell:allow-open",
+    "store:default"
+  ]
+}

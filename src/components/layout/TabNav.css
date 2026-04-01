@@ -1,0 +1,26 @@
+.tab-nav {
+  display: flex;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.tab-item {
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  user-select: none;
+}
+
+.tab-item:hover {
+  color: var(--text);
+}
+
+.tab-item.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}

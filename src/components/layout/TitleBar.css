@@ -1,0 +1,88 @@
+.titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 36px;
+  padding: 0 0 0 12px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titlebar-logo {
+  color: var(--blue);
+  font-size: 16px;
+}
+
+.titlebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-right > .titlebar-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  width: 36px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.titlebar-right > .titlebar-btn:hover {
+  background: var(--bg-input);
+  color: var(--text);
+}
+
+/* Windows 风格窗口控制按钮 */
+.titlebar-window-controls {
+  display: flex;
+  height: 100%;
+}
+
+.win-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+[data-theme="light"] .win-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.win-btn.win-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}

@@ -1,0 +1,64 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  padding: 20px 24px 12px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.stat-blue::after { background: var(--blue); }
+.stat-green::after { background: var(--green); }
+.stat-yellow::after { background: var(--yellow); }
+.stat-pink::after { background: var(--pink); }
+.stat-purple::after { background: var(--purple); }
+.stat-cyan::after { background: var(--cyan); }
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-blue .stat-value { color: var(--blue); }
+.stat-green .stat-value { color: var(--green); }
+.stat-yellow .stat-value { color: var(--yellow); }
+.stat-pink .stat-value { color: var(--pink); }
+.stat-purple .stat-value { color: var(--purple); }
+.stat-cyan .stat-value { color: var(--cyan); }
+
+.stat-sub {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+@media (max-width: 1100px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

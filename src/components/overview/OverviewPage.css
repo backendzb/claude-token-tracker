@@ -1,0 +1,48 @@
+.overview {
+  padding: 0;
+}
+
+.overview-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 24px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+}
+
+.overview-controls select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  outline: none;
+}
+
+.btn-refresh {
+  background: var(--btn-primary);
+  border: none;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.btn-refresh:hover {
+  background: var(--btn-primary-hover);
+}
+
+.overview-status {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px;
+  color: var(--text3);
+  font-size: 14px;
+}

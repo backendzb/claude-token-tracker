@@ -1,0 +1,92 @@
+.bucket-section {
+  padding: 0 24px 12px;
+}
+
+.bucket-title-row {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+
+.bucket-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.bucket-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+.bucket-card.active {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue);
+}
+
+.bucket-card.warning {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow);
+}
+
+.bucket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.bucket-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.bucket-badge.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+.bucket-badge.warning {
+  background: var(--yellow);
+  color: #000;
+}
+
+.bucket-cost {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 4px;
+}
+
+.cost-green { color: var(--green); }
+.cost-yellow { color: var(--yellow); }
+.cost-red { color: var(--red); }
+
+.bucket-meta {
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+
+.bucket-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bucket-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
