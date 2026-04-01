@@ -138,3 +138,10 @@
 .btn-save:hover { background: var(--btn-primary-hover); }
 .save-status { font-size: 11px; color: var(--green); margin-left: 12px; }
 .version-text { font-size: 13px; font-weight: 600; color: var(--text); }
+
+.btn-check-update {
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--text2);
+  padding: 4px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: inherit;
+}
+.btn-check-update:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.update-status { font-size: 11px; color: var(--blue); margin-left: 8px; }

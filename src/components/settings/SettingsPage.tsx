@@ -47,6 +47,7 @@ export default function SettingsPage() {
   const [floatOpacity, setFloatOpacity] = useState(0.9);
   const [status, setStatus] = useState('');
   const [version, setVersion] = useState('');
+  const [updateStatus, setUpdateStatus] = useState('');
   const [floatVisible, setFloatVisible] = useState(false);
 
   useEffect(() => {
@@ -136,10 +137,26 @@ export default function SettingsPage() {
         <div className="setting-group" style={{ marginTop: 24 }}>
           <h4>关于</h4>
           <div className="setting-row">
-            <label>版本:</label>
+            <label>当前版本:</label>
             <span className="version-text">v{version}</span>
           </div>
-          <div className="setting-hint">Tauri v2 + React + Rust</div>
+          <div className="setting-row">
+            <label>检查更新:</label>
+            <button className="btn-check-update" onClick={async () => {
+              setUpdateStatus('检查中...');
+              try {
+                // Open GitHub releases page as fallback
+                const { open } = await import('@tauri-apps/plugin-shell');
+                await open('https://github.com/backendzb/claude-token-tracker/releases');
+                setUpdateStatus('已打开下载页面');
+              } catch {
+                setUpdateStatus('打开失败');
+              }
+              setTimeout(() => setUpdateStatus(''), 3000);
+            }}>检查</button>
+            {updateStatus && <span className="update-status">{updateStatus}</span>}
+          </div>
+          <div className="setting-hint">前往 GitHub Releases 查看最新版本</div>
         </div>
       </div>
     </div>
