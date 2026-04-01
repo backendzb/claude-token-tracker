@@ -41,6 +41,11 @@
   color: #fff;
 }
 
+.bucket-toggle button.active-window {
+  background: var(--orange);
+  color: #fff;
+}
+
 .bucket-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -64,6 +69,16 @@
 
 .bucket-card.warning {
   border-color: var(--red);
+  border-width: 2px;
+}
+
+/* 5h window mode — orange accent */
+.bucket-card.window-mode {
+  border-left: 3px solid var(--orange);
+}
+
+.bucket-card.window-mode.active {
+  border-color: var(--orange);
   border-width: 2px;
 }
 

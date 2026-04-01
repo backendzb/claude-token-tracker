@@ -30,7 +30,7 @@ export default function BucketCards({ timeRange }: Props) {
         <span className="bucket-title-row">{buckets.length} 个{mode === 'session' ? '会话' : '窗口'}</span>
         <div className="bucket-toggle">
           <button className={mode === 'session' ? 'active' : ''} onClick={() => setMode('session')}>会话</button>
-          <button className={mode === 'window' ? 'active' : ''} onClick={() => setMode('window')}>5h窗口</button>
+          <button className={mode === 'window' ? 'active-window' : ''} onClick={() => setMode('window')}>5h窗口</button>
         </div>
       </div>
       <div className="bucket-grid">
@@ -45,7 +45,7 @@ export default function BucketCards({ timeRange }: Props) {
             : new Date(b.endTime).toLocaleString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
           return (
-            <div key={b.id} className={`bucket-card ${cls}`}>
+            <div key={b.id} className={`bucket-card ${cls} ${mode === 'window' ? 'window-mode' : ''}`}>
               <div className="bucket-time">{start} ~ {end}</div>
               <div className={`bucket-cost ${costCls(b.costUSD)}`}>${b.costUSD.toFixed(4)}</div>
               <div className="bucket-meta">
