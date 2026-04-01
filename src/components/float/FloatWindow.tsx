@@ -57,9 +57,7 @@ export default function FloatWindow() {
     cacheTokens: 0, totalTokens: 0, burnRate: 0, latestModel: '',
   });
   const [pinned, setPinned] = useState(true);
-  const [opacity, setOpacity] = useState(0.9);
   const [theme, setTheme] = useState('deep-ocean');
-  const [hover, setHover] = useState(false);
 
   const loadData = async () => {
     try {
@@ -91,27 +89,23 @@ export default function FloatWindow() {
 
   useEffect(() => {
     api.getSettings().then((s: any) => {
-      setTheme(s.theme || 'dark');
-      setOpacity(s.floatOpacity ?? 0.9);
+      setTheme(s.theme || 'deep-ocean');
     });
 
     loadData();
     const timer = setInterval(loadData, 30000);
     const unlistenData = listen('data-changed', () => loadData());
     const unlistenTheme = listen<string>('theme-changed', (e) => setTheme(e.payload));
-    const unlistenOpacity = listen<number>('opacity-changed', (e) => setOpacity(e.payload));
 
     return () => {
       clearInterval(timer);
       unlistenData.then(fn => fn());
       unlistenTheme.then(fn => fn());
-      unlistenOpacity.then(fn => fn());
     };
   }, []);
 
   const t = THEMES[theme] || THEMES['deep-ocean'];
   const [r, g, b] = t.bg;
-  const alpha = hover ? 1 : opacity;
 
   // Sync body background with theme so rgba works correctly
   useEffect(() => {
@@ -133,12 +127,10 @@ export default function FloatWindow() {
     <div
       className="float-container"
       style={{
-        background: `rgba(${r},${g},${b},${alpha})`,
+        background: `rgb(${r},${g},${b})`,
         color: t.text,
         borderColor: t.border,
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
     >
       <div className="float-header">
         <span className="float-title" style={{ color: t.text2 }}>API 费用</span>

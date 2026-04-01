@@ -1,43 +1,8 @@
 import { useState, useEffect } from 'react';
-import { emitTo } from '@tauri-apps/api/event';
 import { api } from '../../api';
 import { themes } from '../../themes';
 import './SettingsPage.css';
 
-function BatterySlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const pct = Math.round(value * 100);
-  const segments = 10;
-  const filled = Math.round(value * segments);
-  const color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
-
-  return (
-    <div className="battery-wrap">
-      <div className="battery-outer">
-        <div className="battery-body">
-          {Array.from({ length: segments }, (_, i) => (
-            <div
-              key={i}
-              className={`battery-seg ${i < filled ? 'filled' : ''}`}
-              style={{ background: i < filled ? color : undefined }}
-            />
-          ))}
-        </div>
-        <div className="battery-tip" />
-        {/* Native range input layered on top for drag support */}
-        <input
-          type="range"
-          className="battery-input"
-          min={30}
-          max={100}
-          step={5}
-          value={pct}
-          onChange={(e) => onChange(Number(e.target.value) / 100)}
-        />
-      </div>
-      <span className="battery-pct">{pct}%</span>
-    </div>
-  );
-}
 
 interface SettingsProps {
   currentTheme: string;
@@ -50,7 +15,6 @@ export default function SettingsPage({ currentTheme, onThemeChange }: SettingsPr
   const [requestThreshold, setRequestThreshold] = useState('');
   const [shortcut, setShortcut] = useState('Ctrl+Shift+T');
   const [floatShortcut, setFloatShortcut] = useState('');
-  const [floatOpacity, setFloatOpacity] = useState(0.9);
   const [status, setStatus] = useState('');
   const [version, setVersion] = useState('');
   const [updateStatus, setUpdateStatus] = useState('');
@@ -63,7 +27,6 @@ export default function SettingsPage({ currentTheme, onThemeChange }: SettingsPr
       setRequestThreshold(s.requestThreshold || '');
       setShortcut(s.shortcut || 'Ctrl+Shift+T');
       setFloatShortcut(s.floatShortcut || '');
-      setFloatOpacity(s.floatOpacity ?? 0.9);
     });
     api.getVersion().then(setVersion);
     api.getFloatVisible().then(setFloatVisible);
@@ -76,7 +39,6 @@ export default function SettingsPage({ currentTheme, onThemeChange }: SettingsPr
       requestThreshold: parseFloat(requestThreshold as string) || 0,
       shortcut,
       floatShortcut,
-      floatOpacity,
     };
     const result = await api.saveSettings(settings);
     await api.registerShortcuts();
@@ -150,14 +112,6 @@ export default function SettingsPage({ currentTheme, onThemeChange }: SettingsPr
             </button>
           </div>
           <div className="setting-hint">始终置顶的小窗口，实时显示今日费用</div>
-          <div className="setting-row">
-            <label>透明度:</label>
-            <BatterySlider value={floatOpacity} onChange={(v) => {
-              setFloatOpacity(v);
-              emitTo('float', 'opacity-changed', v);
-            }} />
-          </div>
-          <div className="setting-hint">鼠标悬停时自动恢复完全不透明</div>
         </div>
         <div className="setting-group">
           <h4>快捷键</h4>
