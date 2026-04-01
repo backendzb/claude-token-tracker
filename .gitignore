@@ -7,3 +7,5 @@ src-tauri/gen/
 .spec-workflow/
 CLAUDE.md
 *.png
+*.exe
+*.nsi
