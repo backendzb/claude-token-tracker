@@ -11,7 +11,7 @@ import './OverviewPage.css';
 export default function OverviewPage() {
   const [records, setRecords] = useState<UsageRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('7');
+  const [timeRange, setTimeRange] = useState('1');
 
   const loadData = useCallback(async () => {
     setLoading(true);

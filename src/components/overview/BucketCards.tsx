@@ -11,7 +11,7 @@ type ViewMode = 'session' | 'window';
 
 export default function BucketCards({ timeRange }: Props) {
   const [buckets, setBuckets] = useState<BucketData[]>([]);
-  const [mode, setMode] = useState<ViewMode>('session');
+  const [mode, setMode] = useState<ViewMode>('window');
 
   useEffect(() => {
     const days = parseInt(timeRange) || 7;
@@ -29,8 +29,8 @@ export default function BucketCards({ timeRange }: Props) {
       <div className="bucket-header-row">
         <span className="bucket-title-row">{buckets.length} 个{mode === 'session' ? '会话' : '窗口'}</span>
         <div className="bucket-toggle">
-          <button className={mode === 'session' ? 'active' : ''} onClick={() => setMode('session')}>会话</button>
           <button className={mode === 'window' ? 'active-window' : ''} onClick={() => setMode('window')}>5h窗口</button>
+          <button className={mode === 'session' ? 'active' : ''} onClick={() => setMode('session')}>会话</button>
         </div>
       </div>
       <div className="bucket-grid">
