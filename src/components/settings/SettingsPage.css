@@ -12,9 +12,104 @@
   background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
   padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; flex: 1; outline: none;
 }
-.setting-row input[type="range"] { width: 120px; }
 .setting-hint { font-size: 10px; color: var(--text3); margin: -4px 0 8px 132px; }
-.opacity-val { font-size: 11px; color: var(--text2); }
+
+/* iOS 风格 Toggle 按钮 */
+.toggle-btn {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  border-radius: 13px;
+  border: none;
+  background: var(--border);
+  cursor: pointer;
+  transition: background 0.25s;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn.on {
+  background: var(--green);
+}
+
+.toggle-thumb {
+  position: absolute;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s;
+}
+
+.toggle-btn.on .toggle-thumb {
+  transform: translateX(22px);
+}
+
+.toggle-label {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.toggle-btn:not(.on) .toggle-label {
+  right: 6px;
+  color: var(--text3);
+}
+
+.toggle-btn.on .toggle-label {
+  left: 7px;
+}
+
+/* iOS/Mac 风格电量指示器 */
+.battery-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.battery-body {
+  display: flex;
+  gap: 2px;
+  padding: 3px 4px;
+  border: 2px solid var(--text2);
+  border-radius: 4px;
+  cursor: pointer;
+  height: 22px;
+  align-items: center;
+}
+
+.battery-tip {
+  width: 3px;
+  height: 10px;
+  background: var(--text2);
+  border-radius: 0 2px 2px 0;
+  margin-left: -4px;
+}
+
+.battery-seg {
+  width: 8px;
+  height: 12px;
+  background: var(--border);
+  border-radius: 1px;
+  transition: background 0.15s;
+}
+
+.battery-seg.filled {
+  /* color set inline */
+}
+
+.battery-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  min-width: 32px;
+  font-variant-numeric: tabular-nums;
+}
 
 .btn-save {
   background: var(--btn-primary); border: none; color: #fff;

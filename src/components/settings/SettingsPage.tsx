@@ -2,6 +2,33 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import './SettingsPage.css';
 
+function BatterySlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const pct = Math.round(value * 100);
+  const segments = 10;
+  const filled = Math.round(value * segments);
+  const color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+
+  return (
+    <div className="battery-wrap">
+      <div className="battery-body" onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        onChange(Math.round(Math.max(0.3, x) * 20) / 20);
+      }}>
+        {Array.from({ length: segments }, (_, i) => (
+          <div
+            key={i}
+            className={`battery-seg ${i < filled ? 'filled' : ''}`}
+            style={{ background: i < filled ? color : undefined }}
+          />
+        ))}
+      </div>
+      <div className="battery-tip" />
+      <span className="battery-pct">{pct}%</span>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [dailyBudget, setDailyBudget] = useState('');
   const [monthlyBudget, setMonthlyBudget] = useState('');
@@ -11,6 +38,7 @@ export default function SettingsPage() {
   const [floatOpacity, setFloatOpacity] = useState(0.9);
   const [status, setStatus] = useState('');
   const [version, setVersion] = useState('');
+  const [floatVisible, setFloatVisible] = useState(false);
 
   useEffect(() => {
     api.getSettings().then((s: any) => {
@@ -22,11 +50,6 @@ export default function SettingsPage() {
       setFloatOpacity(s.floatOpacity ?? 0.9);
     });
     api.getVersion().then(setVersion);
-  }, []);
-
-  const [floatVisible, setFloatVisible] = useState(false);
-
-  useEffect(() => {
     api.getFloatVisible().then(setFloatVisible);
   }, []);
 
@@ -70,6 +93,22 @@ export default function SettingsPage() {
           </div>
         </div>
         <div className="setting-group">
+          <h4>悬浮窗</h4>
+          <div className="setting-row">
+            <label>悬浮费用窗口:</label>
+            <button className={`toggle-btn ${floatVisible ? 'on' : ''}`} onClick={toggleFloat}>
+              <span className="toggle-thumb" />
+              <span className="toggle-label">{floatVisible ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
+          <div className="setting-hint">始终置顶的小窗口，实时显示今日费用</div>
+          <div className="setting-row">
+            <label>透明度:</label>
+            <BatterySlider value={floatOpacity} onChange={setFloatOpacity} />
+          </div>
+          <div className="setting-hint">鼠标悬停时自动恢复完全不透明</div>
+        </div>
+        <div className="setting-group">
           <h4>快捷键</h4>
           <div className="setting-row">
             <label>显示/隐藏窗口:</label>
@@ -78,21 +117,6 @@ export default function SettingsPage() {
           <div className="setting-row">
             <label>悬浮窗开关:</label>
             <input type="text" value={floatShortcut} onChange={e => setFloatShortcut(e.target.value)} placeholder="如 Ctrl+Shift+F" />
-          </div>
-        </div>
-        <div className="setting-group">
-          <h4>悬浮窗</h4>
-          <div className="setting-row">
-            <label>悬浮费用窗口:</label>
-            <button className="btn-float-toggle" onClick={toggleFloat}>
-              {floatVisible ? '关闭' : '开启'}
-            </button>
-          </div>
-          <div className="setting-hint">始终置顶的小窗口，实时显示今日费用</div>
-          <div className="setting-row">
-            <label>透明度:</label>
-            <input type="range" min="0.3" max="1" step="0.05" value={floatOpacity} onChange={e => setFloatOpacity(Number(e.target.value))} />
-            <span className="opacity-val">{Math.round(floatOpacity * 100)}%</span>
           </div>
         </div>
         <button className="btn-save" onClick={save}>保存设置</button>

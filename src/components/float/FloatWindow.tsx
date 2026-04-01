@@ -73,6 +73,14 @@ export default function FloatWindow() {
   };
 
   useEffect(() => {
+    // Sync theme from settings
+    api.getSettings().then((s: any) => {
+      const theme = s.theme || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      const opacity = s.floatOpacity ?? 0.9;
+      document.documentElement.style.setProperty('--float-opacity', String(opacity));
+    });
+
     loadData();
     const timer = setInterval(loadData, 30000);
     const unlisten = listen('data-changed', () => loadData());
