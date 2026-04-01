@@ -6,6 +6,7 @@ import { api } from '../../api';
 import type { UsageRecord } from '../../api/types';
 import StatsGrid from './StatsGrid';
 import BucketCards from './BucketCards';
+import ActivityPanel from './ActivityPanel';
 import './OverviewPage.css';
 
 export default function OverviewPage() {
@@ -72,6 +73,7 @@ export default function OverviewPage() {
       </div>
       <StatsGrid records={records} />
       <BucketCards timeRange={timeRange} />
+      <ActivityPanel />
       {!loading && records.length === 0 && (
         <div className="empty-state">暂无数据</div>
       )}
