@@ -6,3 +6,4 @@ src-tauri/gen/
 .idea/
 .spec-workflow/
 CLAUDE.md
+*.png
