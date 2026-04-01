@@ -1,6 +1,4 @@
 .float-container {
-  background: var(--bg-card, rgba(26, 26, 46, 0.92));
-  border: 1px solid var(--border, rgba(42, 42, 74, 0.6));
   border-radius: 12px;
   padding: 0;
   height: 100vh;
@@ -8,16 +6,12 @@
   flex-direction: column;
   -webkit-app-region: drag;
   cursor: move;
-  backdrop-filter: blur(12px);
   font-family: 'Inter', sans-serif;
-  color: var(--text, #ffffff);
-  opacity: var(--float-opacity, 1);
-  transition: opacity 0.2s;
+  overflow: hidden;
+  border: 1px solid var(--border, #2a2a4a);
 }
 
-.float-container:hover {
-  opacity: 1 !important;
-}
+/* Colors set via inline style for dynamic bg alpha */
 
 .float-header {
   display: flex;
@@ -81,7 +75,7 @@
 
 .float-divider {
   height: 1px;
-  background: var(--border, rgba(42, 42, 74, 0.6));
+  background: var(--border, #2a2a4a);
   margin: 4px 10px 3px;
 }
 

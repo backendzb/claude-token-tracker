@@ -35,23 +35,17 @@ export default function OverviewPage() {
         defaultPath: `claude-usage-${new Date().toISOString().slice(0, 10)}.${ext}`,
         filters: [{ name: format.toUpperCase(), extensions: [ext] }],
       });
-      if (filePath) {
-        await writeTextFile(filePath, content);
-      }
+      if (filePath) await writeTextFile(filePath, content);
     } catch (err) {
       console.error('Export failed:', err);
     }
   };
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  // Auto-refresh when file watcher detects changes
   useEffect(() => {
-    const unlisten = listen('data-changed', () => { loadData(); });
+    const unlisten = listen('data-changed', () => loadData());
     return () => { unlisten.then(fn => fn()); };
   }, [loadData]);
-
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const timer = setInterval(loadData, 30000);
     return () => clearInterval(timer);
@@ -60,23 +54,24 @@ export default function OverviewPage() {
   return (
     <div className="overview">
       <div className="overview-controls">
-        <select value={timeRange} onChange={e => setTimeRange(e.target.value)}>
-          <option value="1">今天</option>
-          <option value="3">3 天</option>
-          <option value="7">7 天</option>
-          <option value="30">30 天</option>
-          <option value="90">90 天</option>
-        </select>
-        <button className="btn-refresh" onClick={loadData}>刷新</button>
+        <div className="ov-select-wrap">
+          <select value={timeRange} onChange={e => setTimeRange(e.target.value)}>
+            <option value="1">今天</option>
+            <option value="3">3天</option>
+            <option value="7">7天</option>
+            <option value="30">30天</option>
+            <option value="90">90天</option>
+          </select>
+        </div>
+        <button className="btn-accent" onClick={loadData}>刷新</button>
         <div style={{ flex: 1 }} />
-        <button className="btn-export" onClick={() => exportRecords('csv')}>CSV</button>
-        <button className="btn-export" onClick={() => exportRecords('json')}>JSON</button>
-        <span className="overview-status">
-          {loading ? '加载中...' : `${records.length} 条记录`}
-        </span>
+        <span className="ov-status">{loading ? '加载中...' : `${records.length} records`}</span>
+        <button className="btn-outline" onClick={() => exportRecords('csv')}>CSV</button>
+        <button className="btn-outline" onClick={() => exportRecords('json')}>JSON</button>
+        <button className="btn-outline" onClick={() => exportRecords('json')}>下载</button>
       </div>
       <StatsGrid records={records} />
-      <BucketCards />
+      <BucketCards timeRange={timeRange} />
       {!loading && records.length === 0 && (
         <div className="empty-state">暂无数据</div>
       )}

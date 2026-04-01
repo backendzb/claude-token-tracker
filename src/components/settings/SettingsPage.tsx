@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { emitTo } from '@tauri-apps/api/event';
 import { api } from '../../api';
 import './SettingsPage.css';
 
@@ -10,20 +11,28 @@ function BatterySlider({ value, onChange }: { value: number; onChange: (v: numbe
 
   return (
     <div className="battery-wrap">
-      <div className="battery-body" onClick={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        onChange(Math.round(Math.max(0.3, x) * 20) / 20);
-      }}>
-        {Array.from({ length: segments }, (_, i) => (
-          <div
-            key={i}
-            className={`battery-seg ${i < filled ? 'filled' : ''}`}
-            style={{ background: i < filled ? color : undefined }}
-          />
-        ))}
+      <div className="battery-outer">
+        <div className="battery-body">
+          {Array.from({ length: segments }, (_, i) => (
+            <div
+              key={i}
+              className={`battery-seg ${i < filled ? 'filled' : ''}`}
+              style={{ background: i < filled ? color : undefined }}
+            />
+          ))}
+        </div>
+        <div className="battery-tip" />
+        {/* Native range input layered on top for drag support */}
+        <input
+          type="range"
+          className="battery-input"
+          min={30}
+          max={100}
+          step={5}
+          value={pct}
+          onChange={(e) => onChange(Number(e.target.value) / 100)}
+        />
       </div>
-      <div className="battery-tip" />
       <span className="battery-pct">{pct}%</span>
     </div>
   );
@@ -104,7 +113,10 @@ export default function SettingsPage() {
           <div className="setting-hint">始终置顶的小窗口，实时显示今日费用</div>
           <div className="setting-row">
             <label>透明度:</label>
-            <BatterySlider value={floatOpacity} onChange={setFloatOpacity} />
+            <BatterySlider value={floatOpacity} onChange={(v) => {
+              setFloatOpacity(v);
+              emitTo('float', 'opacity-changed', v);
+            }} />
           </div>
           <div className="setting-hint">鼠标悬停时自动恢复完全不透明</div>
         </div>

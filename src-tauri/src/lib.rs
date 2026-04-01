@@ -3,18 +3,18 @@ mod data;
 
 use commands::{usage, settings, conversation, system};
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter, Manager, WebviewWindowBuilder, WebviewUrl,
+    Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 /// Shared app state
 struct AppState {
-    float_visible: Mutex<bool>,
+    float_visible: Arc<Mutex<bool>>,
 }
 
 /// Setup system tray with context menu
@@ -150,33 +150,21 @@ fn start_file_watcher(app_handle: tauri::AppHandle) {
     });
 }
 
-/// Toggle float window (create or destroy)
+/// Toggle float window visibility (pre-created in tauri.conf.json)
 fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
     let mut visible = state.float_visible.lock().unwrap();
 
-    if *visible {
-        if let Some(win) = app.get_webview_window("float") {
-            let _ = win.close();
-        }
-        *visible = false;
-        false
-    } else {
-        // Use hash in URL so React renders FloatWindow immediately
-        let url = WebviewUrl::App("index.html#/float".into());
-        if let Ok(_win) = WebviewWindowBuilder::new(app, "float", url)
-            .title("API 费用")
-            .inner_size(210.0, 180.0)
-            .resizable(false)
-            .decorations(false)
-            .transparent(true)
-            .always_on_top(true)
-            .skip_taskbar(true)
-            .build()
-        {
+    if let Some(win) = app.get_webview_window("float") {
+        if *visible {
+            let _ = win.hide();
+            *visible = false;
+        } else {
+            let _ = win.show();
+            let _ = win.set_focus();
             *visible = true;
         }
-        *visible
     }
+    *visible
 }
 
 #[tauri::command]
@@ -227,7 +215,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .manage(AppState {
-            float_visible: Mutex::new(false),
+            float_visible: Arc::new(Mutex::new(false)),
         })
         .invoke_handler(tauri::generate_handler![
             usage::get_usage,

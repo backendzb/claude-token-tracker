@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { api } from '../../api';
 import './FloatWindow.css';
 
@@ -14,6 +15,11 @@ interface FloatData {
   burnRate: number;
   latestModel: string;
 }
+
+const THEMES = {
+  dark: { bg: [30, 30, 56], text: '#ffffff', text2: '#8888aa', text3: '#666688', border: '#2a2a4a', blue: '#6366f1', green: '#34d399', yellow: '#fbbf24', red: '#f85149', purple: '#a78bfa' },
+  light: { bg: [255, 255, 255], text: '#1a1a2e', text2: '#6b7280', text3: '#9ca3af', border: '#e2e2ea', blue: '#6366f1', green: '#1a7f37', yellow: '#9a6700', red: '#cf222e', purple: '#8250df' },
+};
 
 function fmt(n: number) {
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
@@ -43,6 +49,9 @@ export default function FloatWindow() {
     cacheTokens: 0, totalTokens: 0, burnRate: 0, latestModel: '',
   });
   const [pinned, setPinned] = useState(true);
+  const [opacity, setOpacity] = useState(0.9);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [hover, setHover] = useState(false);
 
   const loadData = async () => {
     try {
@@ -73,22 +82,34 @@ export default function FloatWindow() {
   };
 
   useEffect(() => {
-    // Sync theme from settings
     api.getSettings().then((s: any) => {
-      const theme = s.theme || 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
-      const opacity = s.floatOpacity ?? 0.9;
-      document.documentElement.style.setProperty('--float-opacity', String(opacity));
+      setTheme(s.theme || 'dark');
+      setOpacity(s.floatOpacity ?? 0.9);
     });
 
     loadData();
     const timer = setInterval(loadData, 30000);
-    const unlisten = listen('data-changed', () => loadData());
+    const unlistenData = listen('data-changed', () => loadData());
+    const unlistenTheme = listen<string>('theme-changed', (e) => setTheme(e.payload as 'dark' | 'light'));
+    const unlistenOpacity = listen<number>('opacity-changed', (e) => setOpacity(e.payload));
+
     return () => {
       clearInterval(timer);
-      unlisten.then(fn => fn());
+      unlistenData.then(fn => fn());
+      unlistenTheme.then(fn => fn());
+      unlistenOpacity.then(fn => fn());
     };
   }, []);
+
+  const t = THEMES[theme];
+  const [r, g, b] = t.bg;
+  const alpha = hover ? 1 : opacity;
+
+  // Sync body background with theme so rgba works correctly
+  useEffect(() => {
+    document.body.style.background = `rgb(${r},${g},${b})`;
+    document.documentElement.style.background = `rgb(${r},${g},${b})`;
+  }, [r, g, b]);
 
   const togglePin = () => {
     const next = !pinned;
@@ -97,35 +118,46 @@ export default function FloatWindow() {
   };
 
   const close = () => {
-    invoke('toggle_float_window');
+    getCurrentWindow().hide();
   };
 
   return (
-    <div className="float-container">
+    <div
+      className="float-container"
+      style={{
+        background: `rgba(${r},${g},${b},${alpha})`,
+        color: t.text,
+        borderColor: t.border,
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
       <div className="float-header">
-        <span className="float-title">API 费用</span>
+        <span className="float-title" style={{ color: t.text2 }}>API 费用</span>
         <div className="float-actions">
           <button className={`float-btn ${pinned ? 'pin-active' : 'pin-inactive'}`}
-            onClick={togglePin} title={pinned ? '已置顶' : '未置顶'}>📌</button>
-          <button className="float-btn float-close" onClick={close} title="关闭">✕</button>
+            onClick={togglePin} title={pinned ? '已置顶' : '未置顶'}
+            style={{ color: pinned ? t.blue : t.text3 }}>📌</button>
+          <button className="float-btn float-close" onClick={close} title="关闭"
+            style={{ color: t.text3 }}>✕</button>
         </div>
       </div>
       <div className="float-cost-row">
-        <div className={`float-cost ${costClass(data.todayCost)}`}>
+        <div className="float-cost" style={{ color: data.todayCost >= 5 ? t.red : data.todayCost >= 1 ? t.yellow : t.green }}>
           ${data.todayCost.toFixed(4)}
         </div>
-        <div className="float-cost-label">今日</div>
+        <div className="float-cost-label" style={{ color: t.text3 }}>今日</div>
       </div>
-      <div className="float-divider" />
+      <div className="float-divider" style={{ background: t.border }} />
       <div className="float-metrics">
-        <div className="float-metric"><span className="fm-label">请求</span><span className="fm-val">{data.requestCount}</span></div>
-        <div className="float-metric"><span className="fm-label">速率</span><span className="fm-val fm-rate">{data.burnRate > 0 ? `$${data.burnRate.toFixed(4)}/h` : '-'}</span></div>
-        <div className="float-metric"><span className="fm-label">Input</span><span className="fm-val">{fmt(data.inputTokens)}</span></div>
-        <div className="float-metric"><span className="fm-label">Output</span><span className="fm-val">{fmt(data.outputTokens)}</span></div>
-        <div className="float-metric"><span className="fm-label">Cache</span><span className="fm-val">{fmt(data.cacheTokens)}</span></div>
-        <div className="float-metric"><span className="fm-label">总Token</span><span className="fm-val">{fmt(data.totalTokens)}</span></div>
+        <div className="float-metric"><span className="fm-label" style={{ color: t.text3 }}>请求</span><span className="fm-val" style={{ color: t.text2 }}>{data.requestCount}</span></div>
+        <div className="float-metric"><span className="fm-label" style={{ color: t.text3 }}>速率</span><span className="fm-val" style={{ color: t.blue }}>{data.burnRate > 0 ? `$${data.burnRate.toFixed(4)}/h` : '-'}</span></div>
+        <div className="float-metric"><span className="fm-label" style={{ color: t.text3 }}>Input</span><span className="fm-val" style={{ color: t.text2 }}>{fmt(data.inputTokens)}</span></div>
+        <div className="float-metric"><span className="fm-label" style={{ color: t.text3 }}>Output</span><span className="fm-val" style={{ color: t.text2 }}>{fmt(data.outputTokens)}</span></div>
+        <div className="float-metric"><span className="fm-label" style={{ color: t.text3 }}>Cache</span><span className="fm-val" style={{ color: t.text2 }}>{fmt(data.cacheTokens)}</span></div>
+        <div className="float-metric"><span className="fm-label" style={{ color: t.text3 }}>总Token</span><span className="fm-val" style={{ color: t.text }}>{fmt(data.totalTokens)}</span></div>
       </div>
-      <div className="float-model">{shortModel(data.latestModel)}</div>
+      <div className="float-model" style={{ color: t.purple }}>{shortModel(data.latestModel)}</div>
     </div>
   );
 }

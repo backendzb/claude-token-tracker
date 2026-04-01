@@ -65,11 +65,17 @@
   left: 7px;
 }
 
-/* iOS/Mac 风格电量指示器 */
+/* iOS/Mac 风格电量指示器 + 拖拽滑块 */
 .battery-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.battery-outer {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .battery-body {
@@ -78,9 +84,9 @@
   padding: 3px 4px;
   border: 2px solid var(--text2);
   border-radius: 4px;
-  cursor: pointer;
   height: 22px;
   align-items: center;
+  pointer-events: none;
 }
 
 .battery-tip {
@@ -89,6 +95,19 @@
   background: var(--text2);
   border-radius: 0 2px 2px 0;
   margin-left: -4px;
+  pointer-events: none;
+}
+
+/* Invisible native range on top of battery for drag */
+.battery-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% - 3px); /* exclude tip */
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
 }
 
 .battery-seg {

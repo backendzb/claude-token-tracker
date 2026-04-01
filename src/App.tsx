@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import TitleBar from './components/layout/TitleBar';
-import TabNav from './components/layout/TabNav';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { emitTo } from '@tauri-apps/api/event';
+import Sidebar from './components/layout/Sidebar';
+import PageHeader from './components/layout/PageHeader';
 import OverviewPage from './components/overview/OverviewPage';
 import ComparePage from './components/compare/ComparePage';
 import RankingPage from './components/ranking/RankingPage';
@@ -8,16 +10,20 @@ import SessionsPage from './components/sessions/SessionsPage';
 import ChatPage from './components/chat/ChatPage';
 import SettingsPage from './components/settings/SettingsPage';
 import FloatWindow from './components/float/FloatWindow';
+import { api } from './api';
 import './App.css';
 
-const tabs = ['总览', '对比', '排名', '会话', '对话', '设置'] as const;
-type Tab = typeof tabs[number];
+const isFloat = (() => {
+  try { return getCurrentWindow().label === 'float'; } catch { return false; }
+})();
+
+const pageTitles: Record<string, string> = {
+  '总览': '总览', '对比': '对比', '排名': '排名',
+  '会话': '会话', '对话': '对话', '设置': '设置',
+};
 
 function App() {
-  // Detect float window synchronously — no flash
-  const isFloat = window.location.hash.includes('/float');
-
-  const [activeTab, setActiveTab] = useState<Tab>('总览');
+  const [activePage, setActivePage] = useState('总览');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -27,33 +33,37 @@ function App() {
       setTheme(saved);
       document.documentElement.setAttribute('data-theme', saved);
     }
-  }, [isFloat]);
+  }, []);
 
-  // Float window — render only the float component
   if (isFloat) {
     return <FloatWindow />;
   }
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+    const settings = await api.getSettings();
+    await api.saveSettings({ ...settings, theme: next });
+    emitTo('float', 'theme-changed', next);
   };
 
   return (
-    <>
-      <TitleBar theme={theme} onToggleTheme={toggleTheme} />
-      <TabNav tabs={tabs} active={activeTab} onChange={setActiveTab} />
-      <main className="page-container">
-        {activeTab === '总览' && <OverviewPage />}
-        {activeTab === '对比' && <ComparePage />}
-        {activeTab === '排名' && <RankingPage />}
-        {activeTab === '会话' && <SessionsPage />}
-        {activeTab === '对话' && <ChatPage />}
-        {activeTab === '设置' && <SettingsPage />}
-      </main>
-    </>
+    <div className="app-layout">
+      <Sidebar active={activePage} onChange={setActivePage} />
+      <div className="app-content">
+        <PageHeader title={pageTitles[activePage]} onToggleTheme={toggleTheme} />
+        <div className="app-page">
+          {activePage === '总览' && <OverviewPage />}
+          {activePage === '对比' && <ComparePage />}
+          {activePage === '排名' && <RankingPage />}
+          {activePage === '会话' && <SessionsPage />}
+          {activePage === '对话' && <ChatPage />}
+          {activePage === '设置' && <SettingsPage />}
+        </div>
+      </div>
+    </div>
   );
 }
 
