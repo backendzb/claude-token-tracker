@@ -1,5 +1,8 @@
 use serde_json::Value;
+use std::fs;
+use std::path::PathBuf;
 use std::process::Command;
+use tauri::Manager;
 
 #[tauri::command]
 pub fn get_pricing_map() -> Value {
@@ -37,6 +40,94 @@ pub async fn export_data(format: String, records: Vec<Value>) -> Result<String, 
         Ok(out)
     } else {
         serde_json::to_string_pretty(&records).map_err(|e| e.to_string())
+    }
+}
+
+/// Install track-usage.js hook into ~/.claude/settings.json
+pub fn install_hook(app_handle: &tauri::AppHandle) {
+    let home = dirs::home_dir().unwrap_or_default();
+    let settings_path = home.join(".claude").join("settings.json");
+    let logs_dir = home.join(".claude").join("usage-logs");
+    let state_dir = logs_dir.join(".state");
+
+    // Find track-usage.js in resources
+    let resource_path = app_handle
+        .path()
+        .resource_dir()
+        .ok()
+        .map(|d: PathBuf| d.join("track-usage.js"))
+        .unwrap_or_default();
+
+    // Fallback: look next to the executable
+    let script_path = if resource_path.exists() {
+        resource_path
+    } else {
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+            .unwrap_or_default();
+        let p = exe_dir.join("track-usage.js");
+        if p.exists() { p } else {
+            // Dev mode: project root
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap_or(std::path::Path::new(".")).join("track-usage.js")
+        }
+    };
+
+    let hook_cmd = format!("node \"{}\"", script_path.to_string_lossy().replace('\\', "/"));
+
+    // Read existing settings
+    let mut settings: serde_json::Value = if settings_path.exists() {
+        fs::read_to_string(&settings_path)
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or(serde_json::json!({}))
+    } else {
+        serde_json::json!({})
+    };
+
+    // Check if already installed
+    if let Some(stops) = settings.get("hooks").and_then(|h| h.get("Stop")).and_then(|s| s.as_array()) {
+        for entry in stops {
+            if let Some(hooks) = entry.get("hooks").and_then(|h| h.as_array()) {
+                for h in hooks {
+                    if let Some(cmd) = h.get("command").and_then(|c| c.as_str()) {
+                        if cmd.contains("track-usage.js") {
+                            return; // Already installed
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Install hook
+    let hooks = settings.as_object_mut().unwrap();
+    if !hooks.contains_key("hooks") {
+        hooks.insert("hooks".to_string(), serde_json::json!({}));
+    }
+    let hooks_obj = hooks.get_mut("hooks").unwrap().as_object_mut().unwrap();
+    if !hooks_obj.contains_key("Stop") {
+        hooks_obj.insert("Stop".to_string(), serde_json::json!([]));
+    }
+    let stop_arr = hooks_obj.get_mut("Stop").unwrap().as_array_mut().unwrap();
+    stop_arr.push(serde_json::json!({
+        "hooks": [{
+            "type": "command",
+            "command": hook_cmd,
+            "timeout": 5000
+        }]
+    }));
+
+    // Ensure directories exist
+    let _ = fs::create_dir_all(&state_dir);
+
+    // Ensure .claude dir exists
+    let claude_dir = home.join(".claude");
+    let _ = fs::create_dir_all(&claude_dir);
+
+    // Write settings
+    if let Ok(json) = serde_json::to_string_pretty(&settings) {
+        let _ = fs::write(&settings_path, json);
     }
 }
 

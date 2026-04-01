@@ -243,6 +243,9 @@ pub fn run() {
             start_file_watcher(app.handle().clone());
             register_shortcuts(app.handle());
 
+            // Auto-install track-usage hook on first launch
+            system::install_hook(app.handle());
+
             // Intercept close → let frontend handle with dialog
             let main_win = app.get_webview_window("main").unwrap();
             let app_handle = app.handle().clone();
