@@ -203,6 +203,20 @@ fn register_shortcuts_cmd(app: tauri::AppHandle) {
     register_shortcuts(&app);
 }
 
+/// Hide main window to tray
+#[tauri::command]
+fn hide_to_tray(app: tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.hide();
+    }
+}
+
+/// Quit app
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -231,19 +245,22 @@ pub fn run() {
             get_float_visible,
             float_set_always_on_top,
             register_shortcuts_cmd,
+            hide_to_tray,
+            quit_app,
         ])
         .setup(|app| {
             setup_tray(app)?;
             start_file_watcher(app.handle().clone());
             register_shortcuts(app.handle());
 
-            // Window close → hide to tray
+            // Intercept close → let frontend handle with dialog
             let main_win = app.get_webview_window("main").unwrap();
-            let win_clone = main_win.clone();
+            let app_handle = app.handle().clone();
             main_win.on_window_event(move |event| {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
-                    let _ = win_clone.hide();
+                    // Emit event to frontend to show dialog
+                    let _ = app_handle.emit("close-requested", ());
                 }
             });
 
