@@ -251,35 +251,20 @@ pub async fn load_session_list(options: Option<UsageOptions>) -> Result<Vec<Sess
     Ok(sessions)
 }
 
-/// 5-hour window bucket analysis
+/// 5-hour window bucket analysis — grouped by session_id
 pub async fn load_bucket_data(options: Option<UsageOptions>) -> Result<Vec<BucketData>, String> {
     let records = load_all_usage_data(options).await?;
     if records.is_empty() {
         return Ok(vec![]);
     }
 
-    let mut buckets: Vec<Vec<&UsageRecord>> = Vec::new();
-    let mut current_bucket: Vec<&UsageRecord> = Vec::new();
-    let mut bucket_start_ms: i64 = 0;
-
+    // Group by session_id — each session is a bucket
+    let mut session_map: HashMap<String, Vec<&UsageRecord>> = HashMap::new();
     for r in &records {
-        let ts_ms = chrono::DateTime::parse_from_rfc3339(&r.timestamp)
-            .or_else(|_| chrono::DateTime::parse_from_str(&r.timestamp, "%Y-%m-%dT%H:%M:%S%.fZ"))
-            .map(|dt| dt.timestamp_millis())
-            .unwrap_or(0);
+        session_map.entry(r.session_id.clone()).or_default().push(r);
+    }
 
-        if current_bucket.is_empty() || (ts_ms - bucket_start_ms) > SESSION_DURATION_MS {
-            if !current_bucket.is_empty() {
-                buckets.push(current_bucket);
-                current_bucket = Vec::new();
-            }
-            bucket_start_ms = ts_ms;
-        }
-        current_bucket.push(r);
-    }
-    if !current_bucket.is_empty() {
-        buckets.push(current_bucket);
-    }
+    let buckets: Vec<Vec<&UsageRecord>> = session_map.into_values().collect();
 
     let now_ms = chrono::Utc::now().timestamp_millis();
 
