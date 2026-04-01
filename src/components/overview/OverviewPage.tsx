@@ -16,7 +16,7 @@ export default function OverviewPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const days = parseInt(timeRange) || 7;
+      const days = parseInt(timeRange) || 1;
       const since = new Date(Date.now() - days * 86400000).toISOString();
       const data = await api.getUsage({ since });
       setRecords(data);

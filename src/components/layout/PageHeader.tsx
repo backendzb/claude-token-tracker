@@ -39,8 +39,8 @@ export default function PageHeader({ title, onToggleTheme }: Props) {
   const win = getCurrentWindow();
 
   return (
-    <div className="page-header">
-      <h1 className="page-title">{title}</h1>
+    <div className="page-header" data-tauri-drag-region>
+      <h1 className="page-title" data-tauri-drag-region>{title}</h1>
       <div className="page-header-actions">
         <button className="ph-btn" onClick={onToggleTheme} title="切换主题">
           <span className="material-symbols-rounded">dark_mode</span>
