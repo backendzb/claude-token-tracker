@@ -229,6 +229,7 @@ pub async fn load_session_list(options: Option<UsageOptions>) -> Result<Vec<Sess
             let first = recs.iter().map(|r| r.timestamp.as_str()).min().unwrap_or("").to_string();
             let last = recs.iter().map(|r| r.timestamp.as_str()).max().unwrap_or("").to_string();
             let project = recs.first().map(|r| r.project.clone()).unwrap_or_default();
+            let cwd = recs.first().map(|r| r.cwd.clone()).unwrap_or_default();
 
             SessionSummary {
                 session_id: sid,
@@ -243,6 +244,7 @@ pub async fn load_session_list(options: Option<UsageOptions>) -> Result<Vec<Sess
                 output_tokens: output,
                 cache_creation_input_tokens: cw,
                 cache_read_input_tokens: cr,
+                cwd,
             }
         })
         .collect();

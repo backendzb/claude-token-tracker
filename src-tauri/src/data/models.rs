@@ -64,6 +64,7 @@ pub struct SessionSummary {
     pub output_tokens: u64,
     pub cache_creation_input_tokens: u64,
     pub cache_read_input_tokens: u64,
+    pub cwd: String,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -75,7 +75,7 @@ export default function SessionsPage() {
                       <span>结束: {new Date(s.lastTimestamp).toLocaleString('zh-CN')}</span>
                       <button className="btn-resume" onClick={(e) => {
                         e.stopPropagation();
-                        api.switchContext(s.sessionId, '');
+                        api.switchContext(s.sessionId, s.cwd || '');
                       }}>切换上下文</button>
                     </div>
                   </div>
