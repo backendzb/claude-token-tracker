@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { api } from '../../api';
 import type { UsageRecord } from '../../api/types';
 import StatsGrid from './StatsGrid';
@@ -10,7 +11,7 @@ export default function OverviewPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('7');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const days = parseInt(timeRange) || 7;
@@ -21,9 +22,21 @@ export default function OverviewPage() {
       console.error('Failed to load data:', err);
     }
     setLoading(false);
-  };
+  }, [timeRange]);
 
-  useEffect(() => { loadData(); }, [timeRange]);
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // Auto-refresh when file watcher detects changes
+  useEffect(() => {
+    const unlisten = listen('data-changed', () => { loadData(); });
+    return () => { unlisten.then(fn => fn()); };
+  }, [loadData]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(loadData, 30000);
+    return () => clearInterval(timer);
+  }, [loadData]);
 
   return (
     <div className="overview">

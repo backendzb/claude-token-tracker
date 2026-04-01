@@ -1,0 +1,35 @@
+.sessions-page { padding: 20px 24px; }
+.sessions-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sessions-controls select {
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px;
+}
+.sessions-count { font-size: 11px; color: var(--text3); }
+
+.session-group { margin-bottom: 16px; }
+.session-group-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.session-project { font-size: 13px; font-weight: 600; color: var(--text); }
+.session-group-meta { font-size: 11px; color: var(--text3); }
+
+.session-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-top: 8px; overflow: hidden;
+}
+.session-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  cursor: pointer; transition: background 0.12s;
+}
+.session-row:hover { background: var(--bg-input); }
+.session-id { font-size: 12px; font-weight: 600; color: var(--blue); font-family: monospace; }
+.session-models { font-size: 11px; color: var(--purple); flex: 1; }
+.session-meta { font-size: 11px; color: var(--text3); }
+.session-cost { font-size: 12px; font-weight: 600; color: var(--green); font-variant-numeric: tabular-nums; }
+.session-toggle { font-size: 10px; color: var(--text3); }
+
+.session-detail { padding: 10px 14px; background: var(--bg-input); border-top: 1px solid var(--border); }
+.session-detail-row { display: flex; gap: 20px; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+
+.sessions-empty { text-align: center; color: var(--text3); padding: 48px; font-size: 14px; }

@@ -1,0 +1,26 @@
+.settings-page { padding: 20px 24px; max-width: 600px; }
+.settings-section { display: flex; flex-direction: column; gap: 0; }
+
+.setting-group { margin-bottom: 20px; }
+.setting-group h4 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+.setting-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+}
+.setting-row label { font-size: 12px; color: var(--text2); width: 120px; flex-shrink: 0; }
+.setting-row input[type="number"],
+.setting-row input[type="text"] {
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--text);
+  padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; flex: 1; outline: none;
+}
+.setting-row input[type="range"] { width: 120px; }
+.setting-hint { font-size: 10px; color: var(--text3); margin: -4px 0 8px 132px; }
+.opacity-val { font-size: 11px; color: var(--text2); }
+
+.btn-save {
+  background: var(--btn-primary); border: none; color: #fff;
+  padding: 8px 24px; border-radius: var(--radius-sm); font-size: 13px;
+  cursor: pointer; width: fit-content; transition: background 0.15s;
+}
+.btn-save:hover { background: var(--btn-primary-hover); }
+.save-status { font-size: 11px; color: var(--green); margin-left: 12px; }
+.version-text { font-size: 13px; font-weight: 600; color: var(--text); }
