@@ -161,8 +161,9 @@ fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
         *visible = false;
         false
     } else {
-        let url = WebviewUrl::App("index.html".into());
-        if let Ok(win) = WebviewWindowBuilder::new(app, "float", url)
+        // Use hash in URL so React renders FloatWindow immediately
+        let url = WebviewUrl::App("index.html#/float".into());
+        if let Ok(_win) = WebviewWindowBuilder::new(app, "float", url)
             .title("API 费用")
             .inner_size(210.0, 180.0)
             .resizable(false)
@@ -172,7 +173,6 @@ fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
             .skip_taskbar(true)
             .build()
         {
-            let _ = win.eval("window.__TAURI_FLOAT__ = true; window.location.hash = '#/float'");
             *visible = true;
         }
         *visible
