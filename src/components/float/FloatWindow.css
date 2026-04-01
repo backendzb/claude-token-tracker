@@ -1,0 +1,123 @@
+.float-container {
+  background: rgba(26, 26, 46, 0.92);
+  border: 1px solid rgba(42, 42, 74, 0.6);
+  border-radius: 12px;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-app-region: drag;
+  cursor: move;
+  backdrop-filter: blur(12px);
+  font-family: 'Inter', sans-serif;
+  color: #ffffff;
+}
+
+[data-theme="light"] .float-container {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(226, 226, 234, 0.6);
+  color: #1a1a2e;
+}
+
+.float-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px 2px;
+}
+
+.float-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8888aa;
+  letter-spacing: 0.3px;
+}
+
+.float-actions {
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.float-btn {
+  background: none;
+  border: none;
+  color: #666688;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 1px 4px;
+  line-height: 1;
+  border-radius: 3px;
+}
+
+.float-btn:hover { color: #ffffff; }
+.float-btn.pin-active { color: #6366f1; opacity: 1; }
+.float-btn.pin-inactive { opacity: 0.35; }
+.float-btn.float-close:hover { color: #f85149; }
+
+.float-cost-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 12px;
+}
+
+.float-cost {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-green { color: #34d399; }
+.cost-yellow { color: #fbbf24; }
+.cost-red { color: #f85149; }
+
+.float-cost-label {
+  font-size: 10px;
+  color: #666688;
+}
+
+.float-divider {
+  height: 1px;
+  background: rgba(42, 42, 74, 0.6);
+  margin: 4px 10px 3px;
+}
+
+[data-theme="light"] .float-divider {
+  background: rgba(226, 226, 234, 0.6);
+}
+
+.float-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 8px;
+  padding: 0 12px 4px;
+}
+
+.float-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fm-label {
+  font-size: 9px;
+  color: #666688;
+}
+
+.fm-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8888aa;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm-rate { color: #6366f1; }
+
+.float-model {
+  font-size: 9px;
+  color: #a78bfa;
+  font-weight: 500;
+  padding: 0 12px 6px;
+}

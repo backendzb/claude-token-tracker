@@ -13,4 +13,7 @@ export const api = {
   loadConversation: (sessionId: string) => invoke<any>('load_conversation', { sessionId }),
   getPricingMap: () => invoke<any>('get_pricing_map'),
   exportData: (format: string, records: any[]) => invoke<string>('export_data', { format, records }),
+  toggleFloatWindow: () => invoke<any>('toggle_float_window'),
+  getFloatVisible: () => invoke<boolean>('get_float_visible'),
+  registerShortcuts: () => invoke('register_shortcuts_cmd'),
 };

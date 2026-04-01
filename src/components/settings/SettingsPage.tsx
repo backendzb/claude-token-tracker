@@ -24,6 +24,12 @@ export default function SettingsPage() {
     api.getVersion().then(setVersion);
   }, []);
 
+  const [floatVisible, setFloatVisible] = useState(false);
+
+  useEffect(() => {
+    api.getFloatVisible().then(setFloatVisible);
+  }, []);
+
   const save = async () => {
     const settings = {
       dailyBudget: parseFloat(dailyBudget as string) || 0,
@@ -34,8 +40,14 @@ export default function SettingsPage() {
       floatOpacity,
     };
     const result = await api.saveSettings(settings);
+    await api.registerShortcuts();
     setStatus(result?.success ? '已保存' : '保存失败');
     setTimeout(() => setStatus(''), 2000);
+  };
+
+  const toggleFloat = async () => {
+    const result = await api.toggleFloatWindow();
+    setFloatVisible(result?.visible ?? false);
   };
 
   return (
@@ -70,6 +82,13 @@ export default function SettingsPage() {
         </div>
         <div className="setting-group">
           <h4>悬浮窗</h4>
+          <div className="setting-row">
+            <label>悬浮费用窗口:</label>
+            <button className="btn-float-toggle" onClick={toggleFloat}>
+              {floatVisible ? '关闭' : '开启'}
+            </button>
+          </div>
+          <div className="setting-hint">始终置顶的小窗口，实时显示今日费用</div>
           <div className="setting-row">
             <label>透明度:</label>
             <input type="range" min="0.3" max="1" step="0.05" value={floatOpacity} onChange={e => setFloatOpacity(Number(e.target.value))} />

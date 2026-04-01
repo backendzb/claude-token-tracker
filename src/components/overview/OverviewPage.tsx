@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { api } from '../../api';
 import type { UsageRecord } from '../../api/types';
 import StatsGrid from './StatsGrid';
@@ -23,6 +25,23 @@ export default function OverviewPage() {
     }
     setLoading(false);
   }, [timeRange]);
+
+  const exportRecords = async (format: 'csv' | 'json') => {
+    try {
+      const content = await api.exportData(format, records as any);
+      const ext = format === 'csv' ? 'csv' : 'json';
+      const filePath = await save({
+        title: '导出数据',
+        defaultPath: `claude-usage-${new Date().toISOString().slice(0, 10)}.${ext}`,
+        filters: [{ name: format.toUpperCase(), extensions: [ext] }],
+      });
+      if (filePath) {
+        await writeTextFile(filePath, content);
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  };
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -49,6 +68,9 @@ export default function OverviewPage() {
           <option value="90">90 天</option>
         </select>
         <button className="btn-refresh" onClick={loadData}>刷新</button>
+        <div style={{ flex: 1 }} />
+        <button className="btn-export" onClick={() => exportRecords('csv')}>CSV</button>
+        <button className="btn-export" onClick={() => exportRecords('json')}>JSON</button>
         <span className="overview-status">
           {loading ? '加载中...' : `${records.length} 条记录`}
         </span>

@@ -10,6 +10,7 @@ use tauri::{
     tray::TrayIconBuilder,
     Emitter, Manager, WebviewWindowBuilder, WebviewUrl,
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 /// Shared app state
 struct AppState {
@@ -52,6 +53,55 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .build(app)?;
 
     Ok(())
+}
+
+/// Register global shortcuts
+fn register_shortcuts(app: &tauri::AppHandle) {
+    // Unregister all first
+    let _ = app.global_shortcut().unregister_all();
+
+    // Read settings for shortcut config
+    let settings: serde_json::Value = commands::settings::get_settings();
+    let main_key = settings.get("shortcut")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Ctrl+Shift+T")
+        .to_string();
+
+    let float_key = settings.get("floatShortcut")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    // Main window toggle shortcut
+    let app_clone = app.clone();
+    if let Ok(shortcut) = main_key.parse::<tauri_plugin_global_shortcut::Shortcut>() {
+        let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _sc, event| {
+            if event.state == ShortcutState::Pressed {
+                if let Some(win) = app_clone.get_webview_window("main") {
+                    if win.is_visible().unwrap_or(false) && win.is_focused().unwrap_or(false) {
+                        let _ = win.hide();
+                    } else {
+                        let _ = win.show();
+                        let _ = win.set_focus();
+                    }
+                }
+            }
+        });
+    }
+
+    // Float window toggle shortcut
+    if !float_key.is_empty() {
+        let app_clone2 = app.clone();
+        if let Ok(shortcut) = float_key.parse::<tauri_plugin_global_shortcut::Shortcut>() {
+            let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _sc, event| {
+                if event.state == ShortcutState::Pressed {
+                    let state = app_clone2.state::<AppState>();
+                    let visible = toggle_float(&app_clone2, &state);
+                    let _ = app_clone2.emit("float-toggled", visible);
+                }
+            });
+        }
+    }
 }
 
 /// Start file watcher for JSONL changes
@@ -105,18 +155,16 @@ fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
     let mut visible = state.float_visible.lock().unwrap();
 
     if *visible {
-        // Close float window
         if let Some(win) = app.get_webview_window("float") {
             let _ = win.close();
         }
         *visible = false;
         false
     } else {
-        // Create float window
         let url = WebviewUrl::App("index.html".into());
         if let Ok(win) = WebviewWindowBuilder::new(app, "float", url)
             .title("API 费用")
-            .inner_size(200.0, 168.0)
+            .inner_size(210.0, 180.0)
             .resizable(false)
             .decorations(false)
             .transparent(true)
@@ -124,8 +172,7 @@ fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
             .skip_taskbar(true)
             .build()
         {
-            // Navigate to float route
-            let _ = win.eval("window.location.hash = '#/float'");
+            let _ = win.eval("window.__TAURI_FLOAT__ = true; window.location.hash = '#/float'");
             *visible = true;
         }
         *visible
@@ -143,6 +190,19 @@ fn get_float_visible(state: tauri::State<'_, AppState>) -> bool {
     *state.float_visible.lock().unwrap()
 }
 
+#[tauri::command]
+fn float_set_always_on_top(app: tauri::AppHandle, flag: bool) {
+    if let Some(win) = app.get_webview_window("float") {
+        let _ = win.set_always_on_top(flag);
+    }
+}
+
+/// Re-register shortcuts (called from frontend after settings change)
+#[tauri::command]
+fn register_shortcuts_cmd(app: tauri::AppHandle) {
+    register_shortcuts(&app);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -156,33 +216,28 @@ pub fn run() {
             float_visible: Mutex::new(false),
         })
         .invoke_handler(tauri::generate_handler![
-            // Data
             usage::get_usage,
             usage::get_projects,
             usage::get_sessions,
             usage::get_buckets,
             usage::get_version,
-            // Settings
             settings::get_settings,
             settings::save_settings,
-            // Conversations
             conversation::get_session_index,
             conversation::load_conversation,
-            // System
             system::get_pricing_map,
             system::export_data,
-            // Float
             toggle_float_window,
             get_float_visible,
+            float_set_always_on_top,
+            register_shortcuts_cmd,
         ])
         .setup(|app| {
-            // System tray
             setup_tray(app)?;
-
-            // File watcher
             start_file_watcher(app.handle().clone());
+            register_shortcuts(app.handle());
 
-            // Window close → hide to tray (intercept close on main window)
+            // Window close → hide to tray
             let main_win = app.get_webview_window("main").unwrap();
             let win_clone = main_win.clone();
             main_win.on_window_event(move |event| {
