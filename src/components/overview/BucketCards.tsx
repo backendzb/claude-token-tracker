@@ -23,7 +23,7 @@ export default function BucketCards({ timeRange }: Props) {
 
   return (
     <div className="bucket-section">
-      <div className="bucket-title-row">{buckets.length} 个会话口</div>
+      <div className="bucket-title-row">{buckets.length} 个 5 小时窗口</div>
       <div className="bucket-grid">
         {recent.map(b => {
           const cls = b.isActive
