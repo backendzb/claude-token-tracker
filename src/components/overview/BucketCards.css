@@ -4,10 +4,41 @@
   gap: 10px;
 }
 
+.bucket-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .bucket-title-row {
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
+}
+
+.bucket-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.bucket-toggle button {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bucket-toggle button.active {
+  background: var(--blue);
+  color: #fff;
 }
 
 .bucket-grid {

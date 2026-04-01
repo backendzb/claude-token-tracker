@@ -327,6 +327,78 @@ pub async fn load_bucket_data(options: Option<UsageOptions>) -> Result<Vec<Bucke
     Ok(result)
 }
 
+/// 5-hour time window analysis — grouped by time gaps > 5h
+pub async fn load_time_buckets(options: Option<UsageOptions>) -> Result<Vec<BucketData>, String> {
+    let records = load_all_usage_data(options).await?;
+    if records.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let mut buckets: Vec<Vec<&UsageRecord>> = Vec::new();
+    let mut current: Vec<&UsageRecord> = Vec::new();
+    let mut bucket_start_ms: i64 = 0;
+
+    for r in &records {
+        let ts_ms = chrono::DateTime::parse_from_rfc3339(&r.timestamp)
+            .map(|dt| dt.timestamp_millis())
+            .unwrap_or(0);
+
+        if current.is_empty() || (ts_ms - bucket_start_ms) > SESSION_DURATION_MS {
+            if !current.is_empty() {
+                buckets.push(current);
+                current = Vec::new();
+            }
+            bucket_start_ms = ts_ms;
+        }
+        current.push(r);
+    }
+    if !current.is_empty() {
+        buckets.push(current);
+    }
+
+    let now_ms = chrono::Utc::now().timestamp_millis();
+
+    let result: Vec<BucketData> = buckets
+        .into_iter()
+        .map(|recs| {
+            let first_ts = recs.first().unwrap().timestamp.clone();
+            let last_ts = recs.last().unwrap().timestamp.clone();
+            let start_ms = chrono::DateTime::parse_from_rfc3339(&first_ts)
+                .map(|d| d.timestamp_millis()).unwrap_or(0);
+            let end_ms = start_ms + SESSION_DURATION_MS;
+            let last_ms = chrono::DateTime::parse_from_rfc3339(&last_ts)
+                .map(|d| d.timestamp_millis()).unwrap_or(start_ms);
+
+            let is_active = now_ms >= start_ms && now_ms <= end_ms;
+            let cost: f64 = recs.iter().map(|r| r.cost_usd).sum();
+            let total_tokens: u64 = recs.iter().map(|r| r.input_tokens + r.output_tokens + r.cache_creation_input_tokens + r.cache_read_input_tokens).sum();
+
+            let duration_min = ((last_ms - start_ms) as f64) / 60000.0;
+            let burn_rate = if duration_min > 0.0 { ((cost / duration_min) * 60.0 * 10000.0).round() / 10000.0 } else { 0.0 };
+
+            let projection = if is_active && burn_rate > 0.0 {
+                let remain_min = ((end_ms - now_ms) as f64 / 60000.0).max(0.0) as i64;
+                Some(BucketProjection {
+                    total_cost: ((cost + (burn_rate / 60.0) * remain_min as f64) * 10000.0).round() / 10000.0,
+                    remaining_minutes: remain_min,
+                })
+            } else { None };
+
+            let models = collect_models(&recs.iter().map(|r| (*r).clone()).collect::<Vec<_>>());
+            let end_time = chrono::DateTime::from_timestamp_millis(end_ms)
+                .map(|d| d.to_rfc3339()).unwrap_or_default();
+
+            BucketData {
+                id: first_ts.clone(), start_time: first_ts, end_time,
+                is_active, request_count: recs.len() as u64, total_tokens,
+                cost_usd: cost, burn_rate, models, projection,
+            }
+        })
+        .collect();
+
+    Ok(result)
+}
+
 /// Get unique project names
 pub async fn get_project_list() -> Result<Vec<String>, String> {
     let mut projects: HashSet<String> = HashSet::new();

@@ -6,6 +6,7 @@ export const api = {
   getProjects: () => invoke<string[]>('get_projects'),
   getSessions: (options?: UsageOptions) => invoke<SessionSummary[]>('get_sessions', { options }),
   getBuckets: (options?: UsageOptions) => invoke<BucketData[]>('get_buckets', { options }),
+  getTimeBuckets: (options?: UsageOptions) => invoke<BucketData[]>('get_time_buckets', { options }),
   getVersion: () => invoke<string>('get_version'),
   getSettings: () => invoke<any>('get_settings'),
   saveSettings: (settings: any) => invoke<any>('save_settings', { settings }),

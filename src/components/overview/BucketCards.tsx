@@ -7,23 +7,32 @@ interface Props {
   timeRange: string;
 }
 
+type ViewMode = 'session' | 'window';
+
 export default function BucketCards({ timeRange }: Props) {
   const [buckets, setBuckets] = useState<BucketData[]>([]);
+  const [mode, setMode] = useState<ViewMode>('session');
 
   useEffect(() => {
     const days = parseInt(timeRange) || 7;
     const since = new Date(Date.now() - days * 86400000).toISOString();
-    api.getBuckets({ since }).then(setBuckets).catch(console.error);
-  }, [timeRange]);
+    const fetcher = mode === 'session' ? api.getBuckets : api.getTimeBuckets;
+    fetcher({ since }).then(setBuckets).catch(console.error);
+  }, [timeRange, mode]);
 
   if (!buckets.length) return null;
 
-  // Reverse: newest first, show up to 8
-  const recent = [...buckets].reverse().slice(0, 8);
+  const recent = [...buckets].reverse().slice(0, 9);
 
   return (
     <div className="bucket-section">
-      <div className="bucket-title-row">{buckets.length} 个会话</div>
+      <div className="bucket-header-row">
+        <span className="bucket-title-row">{buckets.length} 个{mode === 'session' ? '会话' : '窗口'}</span>
+        <div className="bucket-toggle">
+          <button className={mode === 'session' ? 'active' : ''} onClick={() => setMode('session')}>会话</button>
+          <button className={mode === 'window' ? 'active' : ''} onClick={() => setMode('window')}>5h窗口</button>
+        </div>
+      </div>
       <div className="bucket-grid">
         {recent.map(b => {
           const cls = b.isActive
@@ -42,6 +51,9 @@ export default function BucketCards({ timeRange }: Props) {
               <div className="bucket-meta">
                 {b.requestCount} 请求 · {fmt(b.totalTokens)} tokens
                 {b.burnRate > 0 && <> · ${b.burnRate.toFixed(4)}/h</>}
+                {mode === 'window' && b.projection && (
+                  <> · 预估 ${b.projection.totalCost.toFixed(4)} ({b.projection.remainingMinutes}min)</>
+                )}
               </div>
             </div>
           );

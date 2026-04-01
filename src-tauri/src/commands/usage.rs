@@ -22,6 +22,11 @@ pub async fn get_buckets(options: Option<UsageOptions>) -> Result<Vec<BucketData
 }
 
 #[tauri::command]
+pub async fn get_time_buckets(options: Option<UsageOptions>) -> Result<Vec<BucketData>, String> {
+    loader::load_time_buckets(options).await
+}
+
+#[tauri::command]
 pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }

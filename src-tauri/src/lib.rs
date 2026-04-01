@@ -222,6 +222,7 @@ pub fn run() {
             usage::get_projects,
             usage::get_sessions,
             usage::get_buckets,
+            usage::get_time_buckets,
             usage::get_version,
             settings::get_settings,
             settings::save_settings,
