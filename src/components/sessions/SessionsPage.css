@@ -30,6 +30,13 @@
 .session-toggle { font-size: 10px; color: var(--text3); }
 
 .session-detail { padding: 10px 14px; background: var(--bg-input); border-top: 1px solid var(--border); }
+
+.btn-resume {
+  background: var(--blue); border: none; color: #fff;
+  padding: 3px 10px; border-radius: 4px; font-size: 11px;
+  cursor: pointer; font-family: inherit; margin-left: auto;
+}
+.btn-resume:hover { opacity: 0.9; }
 .session-detail-row { display: flex; gap: 20px; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
 
 .sessions-empty { text-align: center; color: var(--text3); padding: 48px; font-size: 14px; }

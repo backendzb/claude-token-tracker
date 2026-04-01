@@ -73,6 +73,10 @@ export default function SessionsPage() {
                     <div className="session-detail-row">
                       <span>开始: {new Date(s.firstTimestamp).toLocaleString('zh-CN')}</span>
                       <span>结束: {new Date(s.lastTimestamp).toLocaleString('zh-CN')}</span>
+                      <button className="btn-resume" onClick={(e) => {
+                        e.stopPropagation();
+                        api.switchContext(s.sessionId, '');
+                      }}>切换上下文</button>
                     </div>
                   </div>
                 )}
