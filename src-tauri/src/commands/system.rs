@@ -73,7 +73,11 @@ pub fn install_hook(app_handle: &tauri::AppHandle) {
         }
     };
 
-    let hook_cmd = format!("node \"{}\"", script_path.to_string_lossy().replace('\\', "/"));
+    // Strip Windows \\?\ prefix that Node.js can't handle
+    let clean_path = script_path.to_string_lossy()
+        .replace("\\\\?\\", "")
+        .replace('\\', "/");
+    let hook_cmd = format!("node \"{}\"", clean_path);
 
     // Read existing settings
     let mut settings: serde_json::Value = if settings_path.exists() {
