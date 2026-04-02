@@ -43,19 +43,19 @@ pub async fn export_data(format: String, records: Vec<Value>) -> Result<String, 
     }
 }
 
-/// Install track-usage.js hook into ~/.claude/settings.json
+/// Install track-usage.cjs hook into ~/.claude/settings.json
 pub fn install_hook(app_handle: &tauri::AppHandle) {
     let home = dirs::home_dir().unwrap_or_default();
     let settings_path = home.join(".claude").join("settings.json");
     let logs_dir = home.join(".claude").join("usage-logs");
     let state_dir = logs_dir.join(".state");
 
-    // Find track-usage.js in resources
+    // Find track-usage.cjs in resources
     let resource_path = app_handle
         .path()
         .resource_dir()
         .ok()
-        .map(|d: PathBuf| d.join("track-usage.js"))
+        .map(|d: PathBuf| d.join("track-usage.cjs"))
         .unwrap_or_default();
 
     // Fallback: look next to the executable
@@ -66,10 +66,10 @@ pub fn install_hook(app_handle: &tauri::AppHandle) {
             .ok()
             .and_then(|p| p.parent().map(|d| d.to_path_buf()))
             .unwrap_or_default();
-        let p = exe_dir.join("track-usage.js");
+        let p = exe_dir.join("track-usage.cjs");
         if p.exists() { p } else {
             // Dev mode: project root
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap_or(std::path::Path::new(".")).join("track-usage.js")
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap_or(std::path::Path::new(".")).join("track-usage.cjs")
         }
     };
 
@@ -91,7 +91,7 @@ pub fn install_hook(app_handle: &tauri::AppHandle) {
             if let Some(hooks) = entry.get("hooks").and_then(|h| h.as_array()) {
                 for h in hooks {
                     if let Some(cmd) = h.get("command").and_then(|c| c.as_str()) {
-                        if cmd.contains("track-usage.js") {
+                        if cmd.contains("track-usage.cjs") {
                             return; // Already installed
                         }
                     }

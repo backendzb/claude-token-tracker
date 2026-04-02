@@ -52,7 +52,7 @@
         "displayLanguageSelector": false
       }
     },
-    "resources": ["../track-usage.js"]
+    "resources": ["../track-usage.cjs"]
   },
   "plugins": {}
 }
