@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter, Manager,
+    Emitter, Manager, WebviewWindowBuilder, WebviewUrl,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
@@ -150,18 +150,36 @@ fn start_file_watcher(app_handle: tauri::AppHandle) {
     });
 }
 
-/// Toggle float window visibility (pre-created in tauri.conf.json)
+/// Toggle float window — dynamically create or destroy
 fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
     let mut visible = state.float_visible.lock().unwrap();
 
-    if let Some(win) = app.get_webview_window("float") {
-        if *visible {
-            let _ = win.hide();
-            *visible = false;
-        } else {
-            let _ = win.show();
-            let _ = win.set_focus();
-            *visible = true;
+    if *visible {
+        if let Some(win) = app.get_webview_window("float") {
+            let _ = win.destroy();
+        }
+        *visible = false;
+    } else {
+        let url = WebviewUrl::App("index.html".into());
+        match WebviewWindowBuilder::new(app, "float", url)
+            .title("API 费用")
+            .inner_size(210.0, 180.0)
+            .resizable(false)
+            .decorations(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .build()
+        {
+            Ok(win) => {
+                let fv = state.float_visible.clone();
+                win.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Destroyed = event {
+                        *fv.lock().unwrap() = false;
+                    }
+                });
+                *visible = true;
+            }
+            Err(e) => eprintln!("[float] Failed: {}", e),
         }
     }
     *visible
