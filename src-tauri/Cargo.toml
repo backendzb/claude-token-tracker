@@ -1,6 +1,6 @@
 [package]
 name = "claude-token-tracker"
-version = "2.1.0"
+version = "2.1.2"
 description = "Claude Code Token Usage Tracker"
 edition = "2021"
 

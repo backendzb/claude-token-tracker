@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicehash/tauri/v2/tooling/cli/schema.json",
   "productName": "Claude Token Tracker",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "identifier": "com.claude.token-tracker",
   "build": {
     "beforeDevCommand": "npm run dev",

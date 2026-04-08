@@ -16,7 +16,5 @@ export const api = {
   exportData: (format: string, records: any[]) => invoke<string>('export_data', { format, records }),
   getStatsCache: () => invoke<any>('get_stats_cache'),
   switchContext: (sessionId: string, cwd: string) => invoke<any>('switch_context', { sessionId, cwd }),
-  toggleFloatWindow: () => invoke<any>('toggle_float_window'),
-  getFloatVisible: () => invoke<boolean>('get_float_visible'),
   registerShortcuts: () => invoke('register_shortcuts_cmd'),
 };

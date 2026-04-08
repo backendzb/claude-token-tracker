@@ -3,19 +3,13 @@ mod data;
 
 use commands::{usage, settings, conversation, system};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter, Manager, WebviewWindowBuilder, WebviewUrl,
+    Emitter, Manager,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
-
-/// Shared app state
-struct AppState {
-    float_visible: Arc<Mutex<bool>>,
-}
 
 /// Setup system tray with context menu
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -89,19 +83,6 @@ fn register_shortcuts(app: &tauri::AppHandle) {
         });
     }
 
-    // Float window toggle shortcut
-    if !float_key.is_empty() {
-        let app_clone2 = app.clone();
-        if let Ok(shortcut) = float_key.parse::<tauri_plugin_global_shortcut::Shortcut>() {
-            let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _sc, event| {
-                if event.state == ShortcutState::Pressed {
-                    let state = app_clone2.state::<AppState>();
-                    let visible = toggle_float(&app_clone2, &state);
-                    let _ = app_clone2.emit("float-toggled", visible);
-                }
-            });
-        }
-    }
 }
 
 /// Start file watcher for JSONL changes
@@ -150,58 +131,6 @@ fn start_file_watcher(app_handle: tauri::AppHandle) {
     });
 }
 
-/// Toggle float window — dynamically create or destroy
-fn toggle_float(app: &tauri::AppHandle, state: &AppState) -> bool {
-    let mut visible = state.float_visible.lock().unwrap();
-
-    if *visible {
-        if let Some(win) = app.get_webview_window("float") {
-            let _ = win.destroy();
-        }
-        *visible = false;
-    } else {
-        let url = WebviewUrl::App("index.html".into());
-        match WebviewWindowBuilder::new(app, "float", url)
-            .title("API 费用")
-            .inner_size(210.0, 180.0)
-            .resizable(false)
-            .decorations(false)
-            .always_on_top(true)
-            .skip_taskbar(true)
-            .build()
-        {
-            Ok(win) => {
-                let fv = state.float_visible.clone();
-                win.on_window_event(move |event| {
-                    if let tauri::WindowEvent::Destroyed = event {
-                        *fv.lock().unwrap() = false;
-                    }
-                });
-                *visible = true;
-            }
-            Err(e) => eprintln!("[float] Failed: {}", e),
-        }
-    }
-    *visible
-}
-
-#[tauri::command]
-fn toggle_float_window(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> serde_json::Value {
-    let visible = toggle_float(&app, &state);
-    serde_json::json!({"visible": visible})
-}
-
-#[tauri::command]
-fn get_float_visible(state: tauri::State<'_, AppState>) -> bool {
-    *state.float_visible.lock().unwrap()
-}
-
-#[tauri::command]
-fn float_set_always_on_top(app: tauri::AppHandle, flag: bool) {
-    if let Some(win) = app.get_webview_window("float") {
-        let _ = win.set_always_on_top(flag);
-    }
-}
 
 /// Re-register shortcuts (called from frontend after settings change)
 #[tauri::command]
@@ -232,9 +161,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::new().build())
-        .manage(AppState {
-            float_visible: Arc::new(Mutex::new(false)),
-        })
         .invoke_handler(tauri::generate_handler![
             usage::get_usage,
             usage::get_projects,
@@ -250,9 +176,6 @@ pub fn run() {
             system::export_data,
             system::get_stats_cache,
             system::switch_context,
-            toggle_float_window,
-            get_float_visible,
-            float_set_always_on_top,
             register_shortcuts_cmd,
             hide_to_tray,
             quit_app,
