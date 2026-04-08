@@ -26,7 +26,6 @@ export default function SettingsPage({ currentTheme, onThemeChange }: SettingsPr
       setShortcut(s.shortcut || 'Ctrl+Shift+T');
     });
     api.getVersion().then(setVersion);
-    api.getFloatVisible().then(setFloatVisible);
   }, []);
 
   const save = async () => {
