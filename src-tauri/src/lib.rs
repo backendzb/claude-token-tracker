@@ -188,8 +188,24 @@ pub fn run() {
             // Auto-install track-usage hook on first launch
             system::install_hook(app.handle());
 
-            // Intercept close → let frontend handle with dialog
+            // Fix duplicate taskbar icon on Windows
+            // The WebView2 renderer process creates its own taskbar entry.
+            // Force the main window to re-register as the only app window.
             let main_win = app.get_webview_window("main").unwrap();
+            #[cfg(target_os = "windows")]
+            {
+                use windows::Win32::UI::WindowsAndMessaging::*;
+                use windows::Win32::Foundation::HWND;
+                let hwnd = main_win.hwnd().unwrap();
+                let hwnd = HWND(hwnd.0);
+                unsafe {
+                    // Remove and re-add WS_EX_APPWINDOW to consolidate taskbar entries
+                    let style = GetWindowLongW(hwnd, GWL_EXSTYLE);
+                    SetWindowLongW(hwnd, GWL_EXSTYLE, (style & !WS_EX_TOOLWINDOW.0 as i32) | WS_EX_APPWINDOW.0 as i32);
+                }
+            }
+
+            // Intercept close → let frontend handle with dialog
             let app_handle = app.handle().clone();
             main_win.on_window_event(move |event| {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
